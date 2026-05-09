@@ -320,9 +320,9 @@ class TestFirewallRules:
         from secfetch.checks.network.firewall import check
 
         def mock_run(cmd, **kwargs):
-            if cmd == ["sudo", "ufw", "status"]:
+            if cmd == ["ufw", "status"]:
                 return self._make_result("Status: active\n", 0, cmd)
-            if cmd == ["sudo", "ufw", "status", "numbered"]:
+            if cmd == ["ufw", "status", "numbered"]:
                 return self._make_result(
                     "[1] 22/tcp ALLOW\n[2] 80/tcp ALLOW\n[3] 443/tcp ALLOW\n", 0, cmd
                 )

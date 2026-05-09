@@ -55,6 +55,10 @@ def _run_single(check: CheckRegistration) -> CheckResult:
         raw = check["run"]()
         if not isinstance(raw, dict) or "status" not in raw or "value" not in raw:
             raw = {"status": "info", "value": "invalid check result"}
+        if not isinstance(raw["status"], str):
+            raw["status"] = str(raw["status"])
+        if not isinstance(raw["value"], str):
+            raw["value"] = str(raw["value"])
         raw.update(
             {
                 "name": check["name"],

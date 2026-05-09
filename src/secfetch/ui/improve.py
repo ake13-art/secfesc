@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from secfetch.checks.network.services import SUSPICIOUS as SUSPICIOUS_SERVICES

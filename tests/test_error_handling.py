@@ -101,13 +101,13 @@ class TestSysctlCheck:
         mapping = {"0": ("bad", "Disabled"), "1": ("warn", "Partial"), "2": ("ok", "Full")}
         assert sysctl_check(str(f), mapping) == {"status": "ok", "value": "Full"}
 
-    def test_unknown_value_returns_not_available(self, tmp_path):
+    def test_unknown_value_returns_actual_value(self, tmp_path):
         from secfetch.core.error_handling import sysctl_check
         f = tmp_path / "some_sysctl"
         f.write_text("99\n")
         assert sysctl_check(str(f), {"0": ("bad", "Off"), "1": ("ok", "On")}) == {
-            "status": "info",
-            "value": "not available",
+            "status": "warn",
+            "value": "99",
         }
 
     def test_missing_file_returns_not_available(self):

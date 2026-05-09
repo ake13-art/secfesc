@@ -25,11 +25,14 @@ def calculate_score(results: list[CheckResult]) -> tuple[int, dict[str, int]]:
     categories: dict[str, CategoryAccumulator] = {}
 
     for result in results:
+        status = result["status"]
+        if status == "info":
+            continue
         weight = _get_weight(result["risk"])
         total += weight
-        if result["status"] == "ok":
+        if status == "ok":
             points = weight
-        elif result["status"] == "warn":
+        elif status == "warn":
             points = weight // 2
         else:
             points = 0

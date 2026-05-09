@@ -109,10 +109,12 @@ def tmp_noexec() -> dict[str, str]:
 def sticky_tmp() -> dict[str, str]:
     """Check if /tmp has the sticky bit set."""
     tmp_path = Path("/tmp")
-    if not tmp_path.exists():
+    try:
+        # Use lstat() to avoid following symlinks (TOCTOU protection)
+        mode = tmp_path.lstat().st_mode
+    except OSError:
         return {"status": "warn", "value": "/tmp directory does not exist"}
 
-    mode = tmp_path.stat().st_mode
     if mode & stat.S_ISVTX:
         return {"status": "ok", "value": "/tmp has sticky bit set"}
     else:

@@ -46,3 +46,20 @@ class TestCalculateScore:
         assert isinstance(cat_scores, dict)
         for cat_score in cat_scores.values():
             assert 0 <= cat_score <= 100
+
+    def test_unknown_risk_uses_default_weight(self):
+        """Unknown risk levels should use default medium weight, not 0."""
+        results = [
+            {"name": "Test", "category": "test", "risk": "critical", "status": "ok", "value": "x"}
+        ]
+        score, cat_scores = calculate_score(results)
+        assert score == 100
+        assert cat_scores["test"] == 100
+
+    def test_unknown_risk_warn_gives_half_points(self):
+        """Unknown risk with warn status should give half the default weight."""
+        results = [
+            {"name": "Test", "category": "test", "risk": "unknown", "status": "warn", "value": "x"}
+        ]
+        score, cat_scores = calculate_score(results)
+        assert score == 50

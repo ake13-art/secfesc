@@ -1,20 +1,11 @@
 from __future__ import annotations
 
-import os
 import re
 
 from secfetch.core.check import security_check
 from secfetch.core.error_handling import handle_check_errors, safe_subprocess_run
 from secfetch.core.types import PortEntry
 from secfetch.data import port_db
-from secfetch.ui.colors import GREEN, RED, RESET, YELLOW
-
-RISK_COLORS = {
-    "expected": GREEN,
-    "unknown": YELLOW,
-    "unnecessary": YELLOW,
-    "suspicious": RED,
-}
 
 # Risk priority values — higher means greater concern
 _RISK_PRIORITY: dict[str, int] = {
@@ -35,11 +26,6 @@ def _extract_port(local: str) -> str | None:
     """Extract port string from ss local-address field."""
     m = _PORT_RE.search(local)
     return m.group(1) if m else None
-
-
-def colorize_port(port_str: str, risk: str) -> str:
-    color = RISK_COLORS.get(risk, YELLOW)
-    return f"{color}{port_str}{RESET}"
 
 
 def _parse_ports(stdout: str) -> list[PortEntry]:
@@ -90,12 +76,8 @@ def check() -> dict[str, str]:
     else:
         overall = "ok"
 
-    short_mode = os.environ.get("SECFETCH_SHORT", "0") == "1"
-
-    def format_port(p: PortEntry) -> str:
-        if short_mode:
-            return colorize_port(p["port"], p["risk"])
-        return colorize_port(f"{p['port']} ({p['name']}/{p['proto']})", p["risk"])
-
-    value = ", ".join(format_port(p) for p in sorted(ports, key=lambda p: int(p["port"])))
-    return {"status": overall, "value": value}
+    value = ", ".join(
+        f"{p['port']} ({p['name']}/{p['proto']})"
+        for p in sorted(ports, key=lambda p: int(p["port"]))
+    )
+    return {"status": overall, "value": value, "_ports": ports}

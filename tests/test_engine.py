@@ -81,6 +81,38 @@ class TestRunChecks:
         finally:
             engine_module._checks.remove(check)
 
+    def test_validates_status_is_string(self):
+        """A check that returns a non-string status should be caught."""
+
+        def bad_status():
+            return {"status": 123, "value": "ok"}
+
+        check = {"name": "BadStatus", "category": "test", "risk": "low", "run": bad_status}
+        self._register_and_cleanup(check)
+        try:
+            results = run_checks(fast=False)
+            result = next(r for r in results if r["name"] == "BadStatus")
+            assert result["status"] == "info"
+            assert result["value"] == "invalid check result"
+        finally:
+            engine_module._checks.remove(check)
+
+    def test_validates_value_is_string(self):
+        """A check that returns a non-string value should be caught."""
+
+        def bad_value():
+            return {"status": "ok", "value": 42}
+
+        check = {"name": "BadValue", "category": "test", "risk": "low", "run": bad_value}
+        self._register_and_cleanup(check)
+        try:
+            results = run_checks(fast=False)
+            result = next(r for r in results if r["name"] == "BadValue")
+            assert result["status"] == "info"
+            assert result["value"] == "invalid check result"
+        finally:
+            engine_module._checks.remove(check)
+
     def test_preserves_order(self):
         """Results should maintain registration order."""
 

@@ -53,18 +53,30 @@ def _run_single(check: CheckRegistration) -> CheckResult:
     """Execute one check and return a fully-populated result dict."""
     try:
         raw = check["run"]()
-        if not isinstance(raw, dict) or "status" not in raw or "value" not in raw:
+        if (
+            not isinstance(raw, dict)
+            or "status" not in raw
+            or "value" not in raw
+            or not isinstance(raw["status"], str)
+            or not isinstance(raw["value"], str)
+        ):
             raw = {"status": "info", "value": "invalid check result"}
-        if not isinstance(raw["status"], str):
-            raw["status"] = str(raw["status"])
-        if not isinstance(raw["value"], str):
-            raw["value"] = str(raw["value"])
         raw.update(
             {
                 "name": check["name"],
                 "category": check["category"],
                 "risk": check["risk"],
             }
+        )
+        return raw
+    except Exception as e:
+        return {
+            "name": check["name"],
+            "category": check["category"],
+            "risk": check["risk"],
+            "status": "info",
+            "value": f"Error: {e}",
+        }
         )
         return raw
     except Exception as e:

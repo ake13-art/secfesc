@@ -4,6 +4,15 @@ from secfetch.core.logger import log_warning
 from secfetch.core.types import CategoryAccumulator, CheckResult
 
 WEIGHTS: dict[str, int] = {"high": 30, "medium": 20, "low": 10, "info": 0}
+_DEFAULT_WEIGHT = WEIGHTS["medium"]
+
+
+def _get_weight(risk: str) -> int:
+    weight = WEIGHTS.get(risk)
+    if weight is None:
+        log_warning(f"Unknown risk level '{risk}', defaulting to weight {_DEFAULT_WEIGHT}")
+        return _DEFAULT_WEIGHT
+    return weight
 
 
 def calculate_score(results: list[CheckResult]) -> tuple[int, dict[str, int]]:
@@ -16,11 +25,7 @@ def calculate_score(results: list[CheckResult]) -> tuple[int, dict[str, int]]:
     categories: dict[str, CategoryAccumulator] = {}
 
     for result in results:
-        risk = result["risk"]
-        weight = WEIGHTS.get(risk)
-        if weight is None:
-            log_warning(f"Unknown risk level '{risk}' in check '{result['name']}', treating as info")
-            weight = 0
+        weight = _get_weight(result["risk"])
         total += weight
         if result["status"] == "ok":
             points = weight

@@ -7,6 +7,13 @@ from secfetch.core.scoring import calculate_score
 from secfetch.core.types import CheckResult
 from secfetch.ui.colors import CLEAR, GREEN, ICONS, RED, RESET, YELLOW, colorize
 
+_PORT_RISK_COLORS = {
+    "expected": GREEN,
+    "unknown": YELLOW,
+    "unnecessary": YELLOW,
+    "suspicious": RED,
+}
+
 # ─────────────────────────────────────────────
 #  Short mode layout selector
 #  "box"  = categories in a box (default)
@@ -85,6 +92,20 @@ def _format_check_result(results: list[CheckResult], name: str) -> str:
     return colorize(result["status"], f"{ICONS.get(result['status'], '•')} {result['value']}")
 
 
+def _format_value(result: CheckResult) -> str:
+    """Format a check result value, applying port-specific colors when available."""
+    if _has_ansi(result["value"]):
+        return result["value"]
+    ports = result.get("_ports")
+    if ports:
+        parts = []
+        for p in sorted(ports, key=lambda p: int(p["port"])):
+            port_color = _PORT_RISK_COLORS.get(p["risk"], YELLOW)
+            parts.append(f"{port_color}{p['port']} ({p['name']}/{p['proto']}){RESET}")
+        return ", ".join(parts)
+    return colorize(result["status"], result["value"])
+
+
 # ─────────────────────────────────────────────
 #  Full output
 # ─────────────────────────────────────────────
@@ -107,11 +128,7 @@ def print_results(results: list[CheckResult]) -> None:
         for result in grouped[cat]:
             icon = colorize(result["status"], ICONS.get(result["status"], "•"))
             name = result["name"].ljust(_NAME_WIDTH)
-            val = (
-                result["value"]
-                if _has_ansi(result["value"])
-                else colorize(result["status"], result["value"])
-            )
+            val = _format_value(result)
             print(f"    {icon}  {name}  {val}")
         print()
 

@@ -11,7 +11,7 @@ def _ufw_status() -> bool:
     """Check if ufw is active. Works without sudo."""
     result = safe_subprocess_run(["ufw", "status"], timeout=3)
     if result.returncode == 0:
-        return "Status: active" in result.stdout.split("\n")[0]
+        return "Status: active" in result.stdout
     return False
 
 

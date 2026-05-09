@@ -25,26 +25,61 @@ _SKIPPED_DIRS = (
     "/var/cache", "/var/lib/apt", "/var/lib/dpkg",
 )
 
+# Shared cache for single filesystem traversal
+_fs_scan_cache: dict[str, list[str]] | None = None
 
-def _find_cmd(extra_predicates: list[str]) -> list[str]:
-    """Build a find command that prunes known-safe dirs and applies extra predicates."""
+
+def _build_find_cmd() -> list[str]:
+    """Build a find command that prunes known-safe dirs and finds world-writable OR suid files."""
     prune_expr = ["("]
     for i, d in enumerate(_SKIPPED_DIRS):
         if i:
             prune_expr.append("-o")
         prune_expr.extend(["-path", f"{d}", "-o", "-path", f"{d}/*"])
     prune_expr.append(")")
-    return ["find", "/", "-xdev", *prune_expr, "-prune", "-o", "-type", "f", *extra_predicates]
+    return [
+        "find", "/", "-xdev", *prune_expr, "-prune", "-o",
+        "-type", "f", "(", "-perm", "-002", "-o", "-perm", "-4000", ")",
+        "-printf", "%m %p\n",
+    ]
+
+
+def _scan_filesystem() -> tuple[list[str], list[str]]:
+    """Run a single find traversal and return (world_writable_files, suid_files)."""
+    global _fs_scan_cache
+    if _fs_scan_cache is not None:
+        return (_fs_scan_cache["ww"], _fs_scan_cache["suid"])
+
+    cmd = _build_find_cmd()
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, stderr=subprocess.DEVNULL)
+
+    ww_files: list[str] = []
+    suid_files: list[str] = []
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        parts = line.strip().split(" ", 1)
+        if len(parts) != 2:
+            continue
+        perm_str, path = parts
+        try:
+            perm = int(perm_str, 8)
+        except ValueError:
+            continue
+        if perm & stat.S_ISUID:
+            suid_files.append(path)
+        if perm & stat.S_IWOTH:
+            ww_files.append(path)
+
+    _fs_scan_cache = {"ww": ww_files, "suid": suid_files}
+    return ww_files, suid_files
 
 
 @security_check(name="World Writable", category="filesystem", risk="high")
 @handle_check_errors
 def world_writable() -> dict[str, str]:
     """Find world-writable files outside of expected locations."""
-    cmd = _find_cmd(["-perm", "-002", "-print"])
-
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, stderr=subprocess.DEVNULL)
-    files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    files, _ = _scan_filesystem()
 
     if not files:
         return {"status": "ok", "value": "No unexpected world-writable files"}
@@ -58,19 +93,15 @@ def world_writable() -> dict[str, str]:
 @handle_check_errors
 def suid_binaries() -> dict[str, str]:
     """Find SUID binaries that could be privilege escalation vectors."""
-    cmd = _find_cmd(["-perm", "-4000", "-print"])
-
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, stderr=subprocess.DEVNULL)
+    _, suid_files = _scan_filesystem()
 
     total = 0
     unexpected = []
 
-    for line in result.stdout.splitlines():
-        if line.strip():
-            path = line.strip()
-            total += 1
-            if path not in _SAFE_SUID_PATHS and os.path.basename(path) not in _SAFE_SUID_NAMES:
-                unexpected.append(path)
+    for path in suid_files:
+        total += 1
+        if path not in _SAFE_SUID_PATHS and os.path.basename(path) not in _SAFE_SUID_NAMES:
+            unexpected.append(path)
 
     unexpected_count = len(unexpected)
 

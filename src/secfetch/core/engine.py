@@ -91,7 +91,8 @@ def run_checks(fast: bool = False) -> list[CheckResult]:
     ]
 
     results: list[CheckResult | None] = [None] * len(active)
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    max_workers = min(len(active), 8)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(_run_single, c): i for i, c in enumerate(active)}
         for future in as_completed(futures):
             idx = futures[future]

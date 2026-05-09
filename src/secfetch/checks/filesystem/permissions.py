@@ -29,6 +29,7 @@ def world_writable() -> dict[str, str]:
     """Find world-writable files outside of expected locations."""
     cmd = [
         "find", "/",
+        "-xdev",
         "-type", "f",
         "-perm", "-002",
         "-not", "-path", "/proc/*",
@@ -57,6 +58,7 @@ def suid_binaries() -> dict[str, str]:
     """Find SUID binaries that could be privilege escalation vectors."""
     cmd = [
         "find", "/",
+        "-xdev",
         "-type", "f",
         "-perm", "-4000",
         "-not", "-path", "/proc/*",

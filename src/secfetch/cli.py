@@ -52,8 +52,6 @@ def _wait_for_quit(stop_event: threading.Event) -> None:
 
 
 def main():
-    port_db.initialize()
-
     parser = argparse.ArgumentParser(prog="secfetch", add_help=False)
     parser.add_argument("command", nargs="?", default="scan", help=argparse.SUPPRESS)
     parser.add_argument("check", nargs="?", default=None, help=argparse.SUPPRESS)
@@ -74,6 +72,8 @@ def main():
         else:
             print_help()
         return
+
+    port_db.initialize()
 
     if args.command == "live":
         if args.interval < 1:

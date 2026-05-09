@@ -84,4 +84,6 @@ def is_enabled(config: configparser.ConfigParser, check_name: str) -> bool:
     In fastscan mode only explicitly enabled checks run (fallback=False).
     In fullscan mode this function is not called.
     """
+    if not config.has_section("checks"):
+        return False
     return config.getboolean("checks", check_name, fallback=False)

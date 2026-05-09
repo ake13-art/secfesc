@@ -96,10 +96,13 @@ def safe_subprocess_run(
 def sysctl_check(path: str, mapping: dict[str, tuple[str, str]]) -> dict[str, str]:
     """Read a sysctl value from *path* and translate via *mapping* to a status/value dict.
 
-    Returns {"status": "info", "value": "not available"} if the path is unreadable
-    or the value is not present in the mapping.
+    Returns {"status": "info", "value": "not available"} if the path is unreadable.
+    Returns {"status": "warn", "value": "<raw>"} if the value is not in the mapping
+    (e.g. new kernel value) so the user can still see what was read.
     """
     val = safe_read_file(path, default=None)
-    if val is not None and val in mapping:
+    if val is None:
+        return {"status": "info", "value": "not available"}
+    if val in mapping:
         return {"status": mapping[val][0], "value": mapping[val][1]}
-    return {"status": "info", "value": "not available"}
+    return {"status": "warn", "value": f"unexpected value: {val}"}

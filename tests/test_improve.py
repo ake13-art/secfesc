@@ -1,5 +1,6 @@
 """Tests for pure utility functions in ui/improve.py."""
 
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -91,7 +92,7 @@ class TestWriteSysctlConfig:
         def raise_permission(*args, **kwargs):
             raise PermissionError("denied")
 
-        monkeypatch.setattr(Path, "write_text", raise_permission)
+        monkeypatch.setattr(os, "open", raise_permission)
         result = _write_sysctl_config("kernel.kptr_restrict", "2")
         assert result is False
 

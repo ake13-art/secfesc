@@ -122,7 +122,7 @@ def tmp_noexec() -> dict[str, str]:
             parts = line.strip().split()
             if len(parts) >= 4 and parts[1] == "/tmp":
                 mount_options = parts[3]
-                if "noexec" in mount_options:
+                if "noexec" in mount_options.split(","):
                     return {"status": "ok", "value": "/tmp mounted with noexec"}
                 else:
                     return {"status": "bad", "value": "/tmp allows execution"}

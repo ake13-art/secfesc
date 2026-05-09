@@ -61,7 +61,7 @@ def load_config() -> configparser.ConfigParser:
     if not CONFIG_PATH.exists():
         CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
         try:
-            fd = os.open(str(CONFIG_PATH), os.O_CREAT | O_EXCL | os.O_WRONLY, 0o600)
+            fd = os.open(str(CONFIG_PATH), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         except FileExistsError:
             pass
         else:

@@ -314,7 +314,7 @@ def _write_sysctl_config(param: str, value: str) -> bool:
         content = "\n".join(lines) + "\n"
 
         tmp_path = sysctl_path.with_suffix(".tmp")
-        fd = os.open(str(tmp_path), os.O_CREAT | O_EXCL | os.O_WRONLY, 0o644)
+        fd = os.open(str(tmp_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
         try:
             os.write(fd, content.encode())
         finally:

@@ -77,16 +77,6 @@ def _run_single(check: CheckRegistration) -> CheckResult:
             "status": "info",
             "value": f"Error: {e}",
         }
-        )
-        return raw
-    except Exception as e:
-        return {
-            "name": check["name"],
-            "category": check["category"],
-            "risk": check["risk"],
-            "status": "info",
-            "value": f"Error: {e}",
-        }
 
 
 def run_checks(fast: bool = False) -> list[CheckResult]:

@@ -84,9 +84,9 @@ def _strip_ansi(text: str) -> str:
     return _ANSI_RE.sub("", text)
 
 
-def _format_check_result(results: list[CheckResult], name: str) -> str:
+def _format_check_result(result_map: dict[str, CheckResult], name: str) -> str:
     """Format a single named check result for short output modes."""
-    result = next((x for x in results if x["name"] == name), None)
+    result = result_map.get(name)
     if result is None:
         return "N/A"
     return colorize(result["status"], f"{ICONS.get(result['status'], '•')} {result['value']}")
@@ -165,8 +165,9 @@ def print_results_live(results: list[CheckResult], interval: int) -> None:
 
 def _short_box(results: list[CheckResult]) -> None:
     score, _ = calculate_score(results)
-    fmt = functools.partial(_format_check_result, results)
-    kernel = next((r["value"] for r in results if r["name"] == "Kernel"), "?")
+    result_map = {r["name"]: r for r in results}
+    fmt = functools.partial(_format_check_result, result_map)
+    kernel = result_map.get("Kernel", {}).get("value", "?")
 
     lines = [
         f"  {'System':<10}Kernel: {kernel:<20}  Secure Boot: {fmt('Secure Boot')}",
@@ -192,8 +193,9 @@ def _short_box(results: list[CheckResult]) -> None:
 
 def _short_side(results: list[CheckResult]) -> None:
     score, _ = calculate_score(results)
-    fmt = functools.partial(_format_check_result, results)
-    kernel = next((r["value"] for r in results if r["name"] == "Kernel"), "?")
+    result_map = {r["name"]: r for r in results}
+    fmt = functools.partial(_format_check_result, result_map)
+    kernel = result_map.get("Kernel", {}).get("value", "?")
 
     info_lines = [
         f"  Kernel       {kernel}",

@@ -29,7 +29,11 @@ def _wait_for_quit(stop_event: threading.Event) -> None:
         return
 
     fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
+    try:
+        old_settings = termios.tcgetattr(fd)
+    except (termios.error, OSError):
+        return
+
     try:
         tty.setcbreak(fd)
         while not stop_event.is_set():

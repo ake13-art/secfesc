@@ -178,7 +178,7 @@ class AuditEngine:
             "permissions",
             "attributes",
             "kernel",
-            "boot",
+            "booting",
             "services",
             "logging",
         ]

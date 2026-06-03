@@ -183,6 +183,34 @@ class TestEngine:
         counts = AuditEngine._severity_counts(report)
         assert counts == {"errors": 1, "warnings": 1, "notes": 1}
 
+    def test_print_summary_smoke(self, capsys):
+        from datetime import datetime
+
+        from secfesc.secscan.core.engine import AuditReport
+
+        report = AuditReport(
+            hostname="h", start_time=datetime.now(), end_time=datetime.now()
+        )
+        report.findings = [
+            AuditFinding("ssh", "S-1", "Title", "high", "found", "Desc", "Fix", "the thing")
+        ]
+        report.warnings = ["Skipped 'kernel' (run as root to include it)"]
+        AuditEngine().print_summary(report)
+        out = capsys.readouterr().out
+        assert "S-1" in out
+        assert "the thing" in out  # affected line rendered
+        assert "Skipped 'kernel'" in out  # warning rendered
+
+    def test_print_findings_empty(self, capsys):
+        from datetime import datetime
+
+        from secfesc.secscan.core.engine import AuditReport
+
+        AuditEngine().print_findings(
+            AuditReport(hostname="h", start_time=datetime.now())
+        )
+        assert "No findings" in capsys.readouterr().out
+
 
 # ── cli exit codes ────────────────────────────────────────
 class TestCLIExitCodes:

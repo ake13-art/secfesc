@@ -117,7 +117,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div class="meta-item">
                 <div class="meta-label">Version</div>
-                <div class="meta-value">secscan 1.6.0</div>
+                <div class="meta-value">secscan 1.6.1</div>
             </div>
         </div>
     </div>

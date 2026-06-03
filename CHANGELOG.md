@@ -1,3 +1,25 @@
+## [1.6.1] - 03.06.2026
+
+Quality & consistency release — no new checks, a healthier foundation.
+
+### Changed
+
+- ASCII banner now reads **secfesc** (instead of the old "secfetch") in `README.md` and the in-tool logo (`output.py` `LOGO_FULL`/`LOGO_SHORT`).
+- Renamed the persisted sysctl auto-fix file from `99-secfetch.conf` to `99-secfesc.conf` for naming consistency. An existing `99-secfetch.conf` stays active until you remove it.
+
+### Removed
+
+- Dead code: the unused `shared/help.py` duplicate (secfetch uses `secfetch/ui/help.py`) and the empty `secfetch/export/` stub.
+
+### Fixed
+
+- `engine.py`: `_requires_root()` referenced a `boot` category that does not exist; aligned it to the real category name `booting`.
+
+### Tests
+
+- Added tests for the secscan report exporters (`json`/`html`/`csv`) — previously untested — and smoke tests for secfetch/secscan output rendering.
+- Overall coverage raised from 75% to 80% (226 tests).
+
 ## [1.6.0] - 03.06.2026
 
 ### Added

@@ -160,6 +160,7 @@ Use existing `@security_check` decorator (until v2.0 unification).
 
 | Version | Focus |
 |---------|-------|
+| v1.6.1 | Quality & consistency: dead-code removal, naming consistency, banner, +tests (75%→80%) |
 | v1.6.0 | secscan real findings (SSH/Users/Groups), unified shared check framework, packaging fix |
 | v1.5.3 | secscan Export (JSON/HTML/CSV), Bug fixes |
 | v1.5.2 | Bug fixes |

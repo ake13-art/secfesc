@@ -63,14 +63,14 @@ class TestExtractSuspiciousServices:
 
 class TestWriteSysctlConfig:
     def test_creates_file_with_param(self, tmp_path, monkeypatch):
-        target = tmp_path / "99-secfetch.conf"
+        target = tmp_path / "99-secfesc.conf"
         monkeypatch.setattr("secfesc.secfetch.ui.improve.SYSCTL_FILE", str(target))
         result = _write_sysctl_config("kernel.kptr_restrict", "2")
         assert result is True
         assert "kernel.kptr_restrict = 2" in target.read_text()
 
     def test_appends_new_param_to_existing_file(self, tmp_path, monkeypatch):
-        target = tmp_path / "99-secfetch.conf"
+        target = tmp_path / "99-secfesc.conf"
         target.write_text("kernel.dmesg_restrict = 1\n")
         monkeypatch.setattr("secfesc.secfetch.ui.improve.SYSCTL_FILE", str(target))
         _write_sysctl_config("kernel.kptr_restrict", "2")
@@ -79,7 +79,7 @@ class TestWriteSysctlConfig:
         assert "kernel.kptr_restrict = 2" in content
 
     def test_updates_existing_param(self, tmp_path, monkeypatch):
-        target = tmp_path / "99-secfetch.conf"
+        target = tmp_path / "99-secfesc.conf"
         target.write_text("kernel.kptr_restrict = 1\n")
         monkeypatch.setattr("secfesc.secfetch.ui.improve.SYSCTL_FILE", str(target))
         _write_sysctl_config("kernel.kptr_restrict", "2")

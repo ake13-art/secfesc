@@ -1,7 +1,7 @@
 """Fix data for security checks: sysctl mappings, auto-fix commands, and risk warnings."""
 from __future__ import annotations
 
-SYSCTL_FILE = "/etc/sysctl.d/99-secfetch.conf"
+SYSCTL_FILE = "/etc/sysctl.d/99-secfesc.conf"
 
 SYSCTL_PERSISTENT: dict[str, tuple[str, str]] = {
     "aslr": ("kernel.randomize_va_space", "2"),

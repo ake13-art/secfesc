@@ -23,7 +23,7 @@ Examples:
   secscan --verbose     Enable verbose output
         """,
     )
-    parser.add_argument("--version", action="version", version="secscan 1.6.0")
+    parser.add_argument("--version", action="version", version="secscan 1.6.1")
     parser.add_argument(
         "--full",
         action="store_true",

@@ -1,6 +1,15 @@
 """Tests for pure utility functions in ui/output.py."""
 
-from secfesc.secfetch.ui.output import _SCORE_GOOD, _SCORE_WARN, _has_ansi, _strip_ansi, score_bar
+from secfesc.secfetch.ui.output import (
+    _SCORE_GOOD,
+    _SCORE_WARN,
+    _has_ansi,
+    _strip_ansi,
+    print_results,
+    print_results_live,
+    print_results_short,
+    score_bar,
+)
 from secfesc.shared.colors import GREEN, RED, RESET, YELLOW
 
 
@@ -81,3 +90,30 @@ class TestAnsiHelpers:
 
     def test_strip_ansi_leaves_plain_text(self):
         assert _strip_ansi("plain text") == "plain text"
+
+
+class TestRendering:
+    """Smoke tests: the renderers should run and show the data without crashing."""
+
+    def test_print_results_shows_checks_and_score(self, capsys, sample_results):
+        print_results(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "ASLR" in out
+        assert "Firewall" in out
+        assert "/100" in out  # score line present
+
+    def test_print_results_short_renders_box(self, capsys, sample_results):
+        print_results_short(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "ASLR" in out
+        assert "/100" in out
+
+    def test_print_results_live_renders(self, capsys, sample_results):
+        print_results_live(sample_results, interval=5)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "/100" in out
+
+    def test_print_results_handles_empty(self, capsys):
+        print_results([])
+        # should not raise; some output is produced
+        assert capsys.readouterr().out is not None

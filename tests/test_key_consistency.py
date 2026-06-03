@@ -3,20 +3,20 @@ import configparser
 import importlib
 import pkgutil
 
-import secfetch.checks
-from secfetch.core.config import DEFAULT_CONFIG
-from secfetch.ui.help import CHECK_DESCRIPTIONS
-from secfetch.ui.improve import AUTO_FIXES
+import secfesc.checks
+from secfesc.secfetch.ui.help import CHECK_DESCRIPTIONS
+from secfesc.secfetch.ui.improve import AUTO_FIXES
+from secfesc.shared.config import DEFAULT_CONFIG
 
 
 def _get_check_keys():
     """Get all check keys by importing all check modules fresh and reading _checks."""
-    from secfetch.core.engine import _checks
+    from secfesc.shared.registry import _checks
 
     # Ensure all check modules are imported (decorators register checks on import)
     for mod in pkgutil.walk_packages(
-        secfetch.checks.__path__,
-        secfetch.checks.__name__ + ".",
+        secfesc.checks.__path__,
+        secfesc.checks.__name__ + ".",
     ):
         try:
             importlib.import_module(mod.name)

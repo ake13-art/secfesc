@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from secfetch.core import config as config_module
+from secfesc.shared import config as config_module
 
 
 class TestConfig:

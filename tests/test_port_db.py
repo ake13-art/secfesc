@@ -1,7 +1,7 @@
 """Tests for port database module."""
 import threading
 
-from secfetch.data import port_db
+from secfesc.secfetch.data import port_db
 
 
 class TestParseCSV:

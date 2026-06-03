@@ -1,7 +1,7 @@
 """Tests for pure utility functions in ui/output.py."""
 
-from secfetch.ui.colors import GREEN, RED, RESET, YELLOW
-from secfetch.ui.output import _SCORE_GOOD, _SCORE_WARN, _has_ansi, _strip_ansi, score_bar
+from secfesc.secfetch.ui.output import _SCORE_GOOD, _SCORE_WARN, _has_ansi, _strip_ansi, score_bar
+from secfesc.shared.colors import GREEN, RED, RESET, YELLOW
 
 
 class TestScoreBar:

@@ -3,8 +3,8 @@
 import logging
 import threading
 
-import secfetch.core.logger as logger_module
-from secfetch.core.logger import (
+import secfesc.shared.logger as logger_module
+from secfesc.shared.logger import (
     get_logger,
     log_debug,
     log_error,

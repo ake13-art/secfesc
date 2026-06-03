@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from secfetch.ui.improve import (
+from secfesc.secfetch.ui.improve import (
     _extract_suspicious_services,
     _select_fixes,
     _write_sysctl_config,
@@ -64,7 +64,7 @@ class TestExtractSuspiciousServices:
 class TestWriteSysctlConfig:
     def test_creates_file_with_param(self, tmp_path, monkeypatch):
         target = tmp_path / "99-secfetch.conf"
-        monkeypatch.setattr("secfetch.ui.improve.SYSCTL_FILE", str(target))
+        monkeypatch.setattr("secfesc.secfetch.ui.improve.SYSCTL_FILE", str(target))
         result = _write_sysctl_config("kernel.kptr_restrict", "2")
         assert result is True
         assert "kernel.kptr_restrict = 2" in target.read_text()
@@ -72,7 +72,7 @@ class TestWriteSysctlConfig:
     def test_appends_new_param_to_existing_file(self, tmp_path, monkeypatch):
         target = tmp_path / "99-secfetch.conf"
         target.write_text("kernel.dmesg_restrict = 1\n")
-        monkeypatch.setattr("secfetch.ui.improve.SYSCTL_FILE", str(target))
+        monkeypatch.setattr("secfesc.secfetch.ui.improve.SYSCTL_FILE", str(target))
         _write_sysctl_config("kernel.kptr_restrict", "2")
         content = target.read_text()
         assert "kernel.dmesg_restrict = 1" in content
@@ -81,7 +81,7 @@ class TestWriteSysctlConfig:
     def test_updates_existing_param(self, tmp_path, monkeypatch):
         target = tmp_path / "99-secfetch.conf"
         target.write_text("kernel.kptr_restrict = 1\n")
-        monkeypatch.setattr("secfetch.ui.improve.SYSCTL_FILE", str(target))
+        monkeypatch.setattr("secfesc.secfetch.ui.improve.SYSCTL_FILE", str(target))
         _write_sysctl_config("kernel.kptr_restrict", "2")
         content = target.read_text()
         assert "kernel.kptr_restrict = 2" in content

@@ -3,9 +3,9 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "secfetch"
-version = "1.5.1"
-description = "Lightweight Linux security inspection tool"
+name = "secfesc"
+version = "1.6.0"
+description = "Linux security inspection and audit tools (secfetch + secscan)"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "GPL-3.0" }
@@ -14,7 +14,7 @@ authors = [
   { name = "ake13-art" }
 ]
 
-keywords = ["linux", "security", "hardening", "audit"]
+keywords = ["linux", "security", "hardening", "audit", "secfetch", "secscan"]
 
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -24,7 +24,8 @@ classifiers = [
 ]
 
 [project.scripts]
-secfetch = "secfetch.cli:main"
+secfetch = "secfesc.secfetch.cli:main"
+secscan = "secfesc.secscan.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

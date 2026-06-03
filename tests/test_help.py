@@ -1,7 +1,7 @@
 """Tests for the help system (ui/help.py)."""
 from unittest.mock import patch
 
-from secfetch.ui.help import CHECK_DESCRIPTIONS, print_check_help, print_help
+from secfesc.secfetch.ui.help import CHECK_DESCRIPTIONS, print_check_help, print_help
 
 
 class TestCheckDescriptions:
@@ -49,7 +49,7 @@ class TestPrintCheckHelp:
         assert "secfetch help" in out
 
     def test_unknown_check_logs_warning(self):
-        with patch("secfetch.ui.help.log_warning") as mock_warn:
+        with patch("secfesc.secfetch.ui.help.log_warning") as mock_warn:
             print_check_help("nonexistent_check_xyz")
             mock_warn.assert_called_once()
             assert "nonexistent_check_xyz" in mock_warn.call_args[0][0]

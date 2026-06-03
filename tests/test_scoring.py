@@ -1,7 +1,7 @@
 """
 Tests for scoring module
 """
-from secfetch.core.scoring import WEIGHTS, calculate_score
+from secfesc.shared.scoring import WEIGHTS, calculate_score
 
 
 class TestCalculateScore:

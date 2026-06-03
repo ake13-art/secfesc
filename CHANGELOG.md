@@ -1,3 +1,68 @@
+## [1.6.0] - 03.06.2026
+
+### Added
+
+- **secscan now produces real findings.** Implemented a shared audit-check framework and the Phase 1 categories from the roadmap:
+  - `secscan/core/registry.py`: `@audit_check(category)` decorator, auto-discovery of `secscan/core/categories/`, and a per-category runner that turns check functions into `AuditFinding`s (a failing check degrades to an error finding instead of aborting the audit).
+  - `checks ssh`: PermitRootLogin, PermitEmptyPasswords, PasswordAuthentication, legacy Protocol 1, X11Forwarding, MaxAuthTries — reads effective config via `sshd -T` (root) with a `/etc/ssh/sshd_config` fallback and OpenSSH defaults for absent directives.
+  - `checks users`: non-root UID 0 accounts, duplicate UIDs, duplicate usernames, and empty passwords (via `/etc/shadow` when run as root).
+  - `checks groups`: duplicate GIDs, duplicate group names, and extra members of the root group.
+  - Milestone reached: `secscan --category ssh` returns real findings.
+- secscan output now lists every finding grouped by category (coloured by severity, with affected item and remediation), plus an error/warning/note breakdown in the summary.
+- secscan reports skipped categories (e.g. root-only ones run without root) as warnings in the summary and exports.
+- HTML report: added an **Errors** summary card (the `error_count` was previously computed but never shown).
+- Tests: added `tests/test_secscan.py` (17 tests) covering the registry, ssh/users/groups checks, and engine integration.
+
+### Changed
+
+- **Packaging fix (breaking-internal):** completed the migration from the legacy top-level `secfetch` package to the `secfesc` umbrella. The whole codebase and test suite now import from `secfesc.*`; the project is installable and self-contained (previously it only ran because an older `secfetch` package happened to be installed globally).
+- **Unified check framework:** the `@security_check` decorator, registry, discovery and parallel runner now live in `secfesc/shared/registry.py` and are shared infrastructure; secfetch renders results compactly while secscan renders a deep audit.
+- Cross-cutting utilities (types, config, colors, logger, error handling, scoring) are now sourced solely from `secfesc/shared/`; the duplicated `secfetch/core/` copies were removed.
+- `secscan --report <fmt>` written to stdout no longer prints the human summary first, so the JSON/CSV/HTML stream is clean and machine-parseable. With `--output FILE`, the summary is still shown.
+- `secscan --full` now runs every category that has implemented checks (instead of scaffolding all ~55 planned categories and finding nothing).
+
+### Fixed
+
+- `engine.py`: removed the leading-space typo in the `"cryptographic"` category name.
+
+### Docs
+
+- `/docs` is now a GitHub Pages site (Jekyll config + landing page) so the documentation renders as a site when Pages is pointed at the `docs/` folder.
+
+## [1.5.3] - 13.04.2026
+
+### Added
+
+- `secscan` report export: JSON, HTML, and CSV formats
+- `--output FILE` argument to write export to file instead of stdout
+
+### Fixed
+
+- `output.py`: Removed duplicate `_strip_ansi()` function definition
+- `engine.py`: Thread safety in `_discover_checks()` - flag set only after loading completes (prevents retry on partial failure)
+- `secscan/cli.py`: Version bump to 1.5.3
+
+### Code Quality
+
+- Consolidated export functionality into `secscan/report/` module (json.py, html.py, csv.py)
+
+## [1.5.2] - 13.04.2026
+
+### Fixed
+
+- `engine.py`: Fix "2>/dev/null" passed as literal arg to find (use stderr=DEVNULL)
+- `config.py`: Fix duplicate config keys overriding fastscan defaults
+- `network.py`: Remove redundant full GET in _has_network(), use direct download with fallback
+- `improve.py`: Fix silent sysctl persistence failure and duplicate config entries
+- `port_db.py`: Fix inconsistent "warn" risk level (now "unknown")
+- `port_db.py`: Fix race condition in background update (atomic dict replace)
+- `firewall.py`: Add @handle_check_errors decorator to firewall check
+- `services.py`: Deduplicate SUSPICIOUS_SERVICES via import
+
+### Maintenance
+
+- Add `.claude/` to `.gitignore`
+
 ## [1.5.1] - 29.03.2026
 
 ### Fixed

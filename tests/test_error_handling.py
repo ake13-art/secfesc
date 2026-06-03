@@ -1,7 +1,7 @@
 """Tests for error handling utilities."""
 import subprocess
 
-from secfetch.core.error_handling import handle_check_errors, safe_read_file, safe_subprocess_run
+from secfesc.shared.error_handling import handle_check_errors, safe_read_file, safe_subprocess_run
 
 
 class TestHandleCheckErrors:
@@ -95,14 +95,14 @@ class TestSysctlCheck:
     """Tests for sysctl_check()."""
 
     def test_known_value_returns_correct_mapping(self, tmp_path):
-        from secfetch.core.error_handling import sysctl_check
+        from secfesc.shared.error_handling import sysctl_check
         f = tmp_path / "randomize_va_space"
         f.write_text("2\n")
         mapping = {"0": ("bad", "Disabled"), "1": ("warn", "Partial"), "2": ("ok", "Full")}
         assert sysctl_check(str(f), mapping) == {"status": "ok", "value": "Full"}
 
     def test_unknown_value_returns_not_available(self, tmp_path):
-        from secfetch.core.error_handling import sysctl_check
+        from secfesc.shared.error_handling import sysctl_check
         f = tmp_path / "some_sysctl"
         f.write_text("99\n")
         assert sysctl_check(str(f), {"0": ("bad", "Off"), "1": ("ok", "On")}) == {
@@ -111,14 +111,14 @@ class TestSysctlCheck:
         }
 
     def test_missing_file_returns_not_available(self):
-        from secfetch.core.error_handling import sysctl_check
+        from secfesc.shared.error_handling import sysctl_check
         assert sysctl_check("/nonexistent/path/sysctl", {"1": ("ok", "On")}) == {
             "status": "info",
             "value": "not available",
         }
 
     def test_empty_mapping_returns_not_available(self, tmp_path):
-        from secfetch.core.error_handling import sysctl_check
+        from secfesc.shared.error_handling import sysctl_check
         f = tmp_path / "sysctl"
         f.write_text("1\n")
         assert sysctl_check(str(f), {}) == {"status": "info", "value": "not available"}

@@ -1,0 +1,16 @@
+# GitHub Pages configuration for the secfesc documentation site.
+# Enable with: repo Settings -> Pages -> Build and deployment ->
+#   Source: "Deploy from a branch" -> Branch: main, folder: /docs
+title: secfesc
+description: Linux security inspection and audit tools — secfetch + secscan
+theme: jekyll-theme-cayman
+show_downloads: false
+
+# jekyll-relative-links (enabled by default on GitHub Pages) rewrites
+# [text](FILE.md) links to the generated .html, so the same links work both
+# when browsing the repo and on the published Pages site.
+plugins:
+  - jekyll-relative-links
+
+exclude:
+  - README.md

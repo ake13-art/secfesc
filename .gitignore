@@ -1,12 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# Jekyll (GitHub Pages build of /docs)
+docs/_site/
+docs/.jekyll-cache/
+
+# Editor / tooling
 .claude/
-.openclaude-profile.json
-
-# opencode
-.opencode/
-.opencode.json
-.opencode-profile.json
-
-# opencode
-.opencode/
-.opencode.json
-.opencode-profile.json
+.idea/
+.vscode/
+*.swp
+.DS_Store

@@ -1,7 +1,7 @@
 """Tests for the check engine."""
 
-import secfetch.core.engine as engine_module
-from secfetch.core.engine import get_checks, register, run_checks
+import secfesc.shared.registry as engine_module
+from secfesc.shared.registry import get_checks, register, run_checks
 
 
 class TestRegistry:

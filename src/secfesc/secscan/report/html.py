@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import html as _html
+from importlib.metadata import version as _pkg_version
+
 from secfesc.secscan.core.engine import AuditReport
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -117,7 +120,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div class="meta-item">
                 <div class="meta-label">Version</div>
-                <div class="meta-value">secscan 1.6.1</div>
+                <div class="meta-value">secscan {version}</div>
             </div>
         </div>
     </div>
@@ -175,15 +178,16 @@ def export_html(report: AuditReport, output_file: str | None = None) -> str:
             if f.severity in ("warning", "medium")
             else "note"
         )
-        findings_html += f"""
-        <div class="finding {severity_class}">
-            <span class="severity {severity_class}">{f.severity}</span>
-            <span class="category">{f.category}</span>
-            <h3>{f.title}</h3>
-            <p>{f.description}</p>
-            <p><strong>Solution:</strong> {f.solution}</p>
-        </div>
-        """
+        findings_html += (
+            f'<div class="finding {severity_class}">'
+            f'<span class="severity {severity_class}">{_html.escape(f.severity)}</span>'
+            f'<span class="category">{_html.escape(f.category)}</span>'
+            f"<h3>{_html.escape(f.title)}</h3>"
+            f"<p>{_html.escape(f.description)}</p>"
+            f"<p><strong>Solution:</strong> {_html.escape(f.solution)}</p>"
+            + (f"<p><em>Affected:</em> {_html.escape(f.affected)}</p>" if f.affected else "")
+            + "</div>"
+        )
 
     if not findings_html:
         findings_html = "<p>No findings.</p>"
@@ -192,10 +196,11 @@ def export_html(report: AuditReport, output_file: str | None = None) -> str:
     start_str = report.start_time.strftime("%Y-%m-%d %H:%M:%S")
 
     html = HTML_TEMPLATE.format(
-        hostname=report.hostname,
+        hostname=_html.escape(report.hostname),
         start_time=start_str,
         is_root="Yes" if report.is_root else "No",
         duration=duration_str,
+        version=_pkg_version("secfesc"),
         category_count=len(report.categories),
         finding_count=len(report.findings),
         warning_count=warning_count,

@@ -1,5 +1,8 @@
 """Tests for the check engine."""
 
+import importlib
+from unittest.mock import patch
+
 import secfesc.shared.registry as engine_module
 from secfesc.shared.registry import get_checks, register, run_checks
 
@@ -80,6 +83,36 @@ class TestRunChecks:
             assert result["value"] == "invalid check result"
         finally:
             engine_module._checks.remove(check)
+
+    def test_discover_logs_import_errors(self, monkeypatch):
+        """_discover_checks should log errors when a module fails to import."""
+        from unittest.mock import MagicMock
+
+        old_discovered = engine_module._discovered
+        engine_module._discovered = False
+
+        real_import = importlib.import_module
+        call_count = [0]
+
+        def failing_import(name):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise ImportError("synthetic failure")
+            return real_import(name)
+
+        mock_imp = MagicMock()
+        mock_imp.import_module = failing_import
+
+        logged = []
+        try:
+            monkeypatch.setattr(engine_module, "importlib", mock_imp)
+            monkeypatch.setattr(engine_module, "log_error", lambda m: logged.append(m))
+            engine_module._discover_checks()
+        finally:
+            engine_module._discovered = old_discovered
+
+        assert any("Failed to load" in m for m in logged)
+        assert any("completed with" in m for m in logged)
 
     def test_preserves_order(self):
         """Results should maintain registration order."""

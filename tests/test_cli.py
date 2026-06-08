@@ -1,5 +1,6 @@
 """Tests for CLI argument parsing and command routing."""
-from unittest.mock import patch
+import threading
+from unittest.mock import MagicMock, patch
 
 
 class TestCLI:
@@ -79,3 +80,77 @@ class TestCLI:
         with patch("sys.argv", ["secfetch", "improve", "--auto"]):
             main()
         mock_apply.assert_called_once()
+
+    @patch("secfesc.secfetch.cli.port_db")
+    @patch("secfesc.secfetch.cli.print_help")
+    def test_dash_h_flag(self, mock_help, mock_port_db):
+        from secfesc.secfetch.cli import main
+        with patch("sys.argv", ["secfetch", "-h"]):
+            main()
+        mock_help.assert_called_once()
+
+    @patch("secfesc.secfetch.cli.port_db")
+    @patch("secfesc.secfetch.cli.run_checks")
+    @patch("secfesc.secfetch.cli.print_results_live", side_effect=KeyboardInterrupt)
+    def test_live_command_exits_on_keyboard_interrupt(self, mock_live, mock_run, mock_port_db, capsys):
+        from secfesc.secfetch.cli import main
+        mock_run.return_value = []
+        with patch("sys.argv", ["secfetch", "live"]):
+            main()
+        out = capsys.readouterr().out
+        assert "stopped" in out.lower()
+
+    @patch("secfesc.secfetch.cli.port_db")
+    @patch("secfesc.secfetch.cli.run_checks")
+    @patch("secfesc.secfetch.cli.print_results_live")
+    def test_live_command_stop_event_wait_covered(self, mock_live, mock_run, mock_port_db, capsys):
+        """Cover line 83: stop_event.wait() — needs one successful iteration before exit."""
+        from secfesc.secfetch.cli import main
+        mock_run.return_value = []
+
+        def signal_stop(self_event, timeout=None):
+            self_event.set()
+
+        with patch("sys.argv", ["secfetch", "live"]), \
+             patch("secfesc.secfetch.cli.threading.Thread") as MockThread, \
+             patch.object(threading.Event, "wait", signal_stop):
+            MockThread.return_value = MagicMock()
+            main()
+
+        out = capsys.readouterr().out
+        assert "stopped" in out.lower()
+        mock_live.assert_called_once()
+
+
+class TestWaitForQuit:
+    """Tests for _wait_for_quit() helper."""
+
+    def test_non_tty_quit_on_q(self):
+        from secfesc.secfetch.cli import _wait_for_quit
+        import threading
+        stop = threading.Event()
+        with patch("sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = False
+            with patch("builtins.input", side_effect=["q"]):
+                _wait_for_quit(stop)
+        assert stop.is_set()
+
+    def test_non_tty_eof_exits_cleanly(self):
+        from secfesc.secfetch.cli import _wait_for_quit
+        import threading
+        stop = threading.Event()
+        with patch("sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = False
+            with patch("builtins.input", side_effect=EOFError):
+                _wait_for_quit(stop)
+        assert not stop.is_set()
+
+    def test_non_tty_ignores_non_q_input(self):
+        from secfesc.secfetch.cli import _wait_for_quit
+        import threading
+        stop = threading.Event()
+        with patch("sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = False
+            with patch("builtins.input", side_effect=["x", "q"]):
+                _wait_for_quit(stop)
+        assert stop.is_set()

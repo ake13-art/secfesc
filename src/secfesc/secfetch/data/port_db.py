@@ -56,14 +56,16 @@ def _get_local_last_modified() -> str | None:
 
 
 def _download_csv() -> None:
-    # Download fresh CSV and save to cache
+    # Download fresh CSV and save to cache atomically (temp file → rename)
     try:
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         req = urllib.request.Request(IANA_URL)
         with urllib.request.urlopen(req, timeout=10) as r:
             data = r.read().decode("utf-8")
             last_modified = r.headers.get("Last-Modified", "")
-        CACHE_FILE.write_text(data, encoding="utf-8")
+        tmp = CACHE_FILE.with_suffix(".tmp")
+        tmp.write_text(data, encoding="utf-8")
+        tmp.replace(CACHE_FILE)
         CACHE_FILE.with_suffix(".timestamp").write_text(last_modified)
         _parse_csv(data)
     except Exception as e:
@@ -142,7 +144,7 @@ def get_port_info(port: int) -> tuple[str, str]:
         return ("Unknown", "suspicious")
     if port < 49152:
         return ("Unknown", "unknown")
-    return ("Dynamic/Ephemeral", "info")
+    return ("Dynamic/Ephemeral", "expected")
 
 
 def _classify(port: int) -> str:

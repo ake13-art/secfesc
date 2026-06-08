@@ -91,3 +91,17 @@ class TestConfig:
 
         cfg = config_module.load_config()
         assert cfg.getboolean("checks", "aslr") is True
+
+    def test_cache_key_oserror_falls_back_to_str(self, monkeypatch):
+        """_cache_key should handle OSError/RuntimeError from Path.resolve()."""
+        from pathlib import Path
+        monkeypatch.setattr(Path, "resolve", lambda self: (_ for _ in ()).throw(OSError("no resolve")))
+        key = config_module._cache_key()
+        assert isinstance(key, str)
+
+    def test_load_config_creates_default_when_missing(self, tmp_path):
+        """load_config should auto-create the config file if it doesn't exist."""
+        config_module.CONFIG_PATH = tmp_path / "new_dir" / "checks.conf"
+        cfg = config_module.load_config()
+        assert config_module.CONFIG_PATH.exists()
+        assert cfg.has_section("checks")

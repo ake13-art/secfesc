@@ -1,3 +1,35 @@
+## [1.7.0] - 08.06.2026
+
+### Added
+
+- **Four new secscan audit categories** (all run without root and are included in `secscan --quick`, `--full`, and `--category <name>`):
+  - **authentication** — parses `/etc/login.defs` and flags weak `PASS_MAX_DAYS`, `PASS_MIN_DAYS`, `PASS_WARN_AGE`, a weak `ENCRYPT_METHOD` (MD5/DES/SHA256), and a too-permissive `UMASK`.
+  - **firewall** — best-effort, non-interactive detection of an active firewall (firewalld / ufw / nftables / iptables via `systemctl is-active`, `ufw status`, `nft list ruleset`); reports a finding when none is active.
+  - **cron** — flags world-writable `/etc/crontab`, cron directories and the files inside them, plus a missing `cron.allow`/`cron.deny` policy.
+  - **permissions** — checks mode and root ownership of `/etc/passwd`, `/etc/group`, `/etc/shadow`, `/etc/gshadow` using `os.stat` (metadata only, so it works as a normal user).
+- **`secfetch --short` fastfetch-style layout** — logo left, `user@hostname` header right, blue labels, status-coloured values. Set `logo = arch | debian | ubuntu | fedora | none` in `~/.config/secfesc/checks.conf` to match your distro.
+- **+130 tests** (226 → 356 total); coverage raised from 93 % to **100 %**.
+
+### Changed
+
+- `engine._requires_root()` no longer gates the `permissions` category — its checks rely on `os.stat` metadata, which any user can read.
+- **`checks/network/ipv6.py`**: IPv6 enabled now returns `status: warn` instead of `status: info`. IPv6 being on is a hardening consideration (partial credit, 5/10), not neutral (0/10). This is consistent with how other "suboptimal but not dangerous" states are handled (e.g. `rp_filter` Loose = warn).
+
+### Fixed
+
+- **`checks/network/firewall.py`**: Added `_firewalld_active()` helper that detects firewalld via `systemctl is-active firewalld` (no sudo/polkit required). firewalld is now checked first before falling back to ufw / nftables / iptables. Previously, all backends called `sudo` unconditionally, triggering polkit authentication prompts on every secfetch run.
+- **`checks/network/ports.py`**: Open ports check now returns `status: ok` instead of `status: info` when all listening ports are expected (risk priority below warn threshold). The `info` status contributed 0 points to the security score, causing the score to paradoxically *drop* when a previously-warned port was closed.
+- **`secfetch/data/port_db.py`**: Ephemeral/dynamic ports (49152+) were classified with risk `"info"`, which is absent from `RISK_COLORS` and fell back to yellow (warning colour). They are now classified as `"expected"` and display green.
+- **`secscan/cli.py`** + **`secscan/report/html.py`**: Version string was hardcoded as `"secscan 1.7.0"` and would drift out of sync with `pyproject.toml` on every release. Both now read the version dynamically via `importlib.metadata.version("secfesc")`.
+- **`secscan/core/registry.py`**: `_discover()` lacked a threading lock on the `_discovered` flag, unlike the equivalent function in `shared/registry.py`. Added `_discover_lock` for consistency and correctness.
+- **`secscan/cli.py`**: Removed an unreachable `else` branch in the report-format dispatch (argparse `choices=` already enforces valid formats; the branch could never be reached).
+- **`secscan/report/html.py`**: Finding fields (`title`, `description`, `solution`, `affected`, `category`, `severity`) were inserted into the HTML report without escaping. Special characters in system data (e.g. a username containing `<` from `/etc/passwd`) would corrupt the output. All fields are now passed through `html.escape()`. Also added the `affected` field to finding cards (it was rendered in the terminal summary but omitted from the HTML output).
+
+### Code Quality
+
+- **`shared/types.py`**: Removed Python 3.7 compatibility shim (`try/except ImportError` for `TypedDict`). `pyproject.toml` declares `requires-python = ">=3.8"` where `TypedDict` ships in `typing` natively.
+- **`secfetch/ui/help.py`**: Fixed stale help text `"(see config.py)"` → correct reference to `~/.config/secfesc/checks.conf`.
+
 ## [1.6.1] - 03.06.2026
 
 Quality & consistency release — no new checks, a healthier foundation.

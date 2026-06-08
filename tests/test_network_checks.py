@@ -44,8 +44,8 @@ class TestOpenPorts:
             result = check()
         assert result["status"] == "warn"
 
-    def test_expected_ports_give_info(self):
-        """Only expected ports (SSH/22, HTTP/80) should not trigger bad/warn."""
+    def test_expected_ports_give_ok(self):
+        """Only expected ports (SSH/22, HTTP/80) should return ok."""
         from secfesc.checks.network.ports import check
 
         ss_out = (
@@ -57,7 +57,7 @@ class TestOpenPorts:
             "secfesc.checks.network.ports.safe_subprocess_run", return_value=_ss_result(ss_out)
         ), patch("secfesc.secfetch.data.port_db.get_port_info", return_value=("HTTP", "expected")):
             result = check()
-        assert result["status"] == "info"
+        assert result["status"] == "ok"
 
     def test_ss_failure_returns_unavailable(self):
         """ss command failure should return info with 'scan unavailable'."""
@@ -108,7 +108,7 @@ class TestOpenPorts:
             "secfesc.checks.network.ports.safe_subprocess_run", return_value=_ss_result(ss_out)
         ), patch("secfesc.secfetch.data.port_db.get_port_info", return_value=("HTTPS", "expected")):
             result = check()
-        assert result["status"] == "info"
+        assert result["status"] == "ok"
         assert "443" in result["value"]
 
     def test_unknown_port_gives_warn(self):
@@ -370,3 +370,71 @@ class TestParsePortsEdgeCases:
         """Completely malformed ss output should return empty list without exception."""
         result = self._run("GARBAGE\x00DATA\nNot a real line\n")
         assert isinstance(result, list)
+
+    def test_port_extracted_but_not_numeric_is_skipped(self):
+        """If regex matches but captured group is not numeric, skip the port."""
+        from secfesc.checks.network.ports import _parse_ports
+
+        # Craft a line where _PORT_RE finds a match but the captured group is not a number.
+        # _PORT_RE = r"(?:\[.*\]|[^:]+):(\d+)$" — \d+ ensures it's numeric, so
+        # the ValueError branch is hit by returning non-numeric after a forced match.
+        import re
+        from unittest.mock import patch
+
+        mock_re = type("M", (), {"group": lambda self, n: "abc"})()
+
+        with patch("secfesc.checks.network.ports._PORT_RE") as fake_re:
+            fake_re.search.return_value = mock_re
+            with patch("secfesc.secfetch.data.port_db.get_port_info", return_value=("x", "info")):
+                result = _parse_ports(
+                    "Netid State Recv-Q Send-Q Local Address:Port\n"
+                    "tcp   LISTEN 0      128    0.0.0.0:22\n"
+                )
+        assert result == []
+
+    def test_short_mode_colorizes_port_only(self):
+        """When SECFETCH_SHORT=1, format_port omits name/proto."""
+        import os
+        from secfesc.checks.network.ports import check
+
+        ss_out = "Netid State Recv-Q Send-Q Local Address:Port\ntcp LISTEN 0 128 0.0.0.0:22\n"
+        with patch("secfesc.checks.network.ports.safe_subprocess_run",
+                   return_value=_ss_result(ss_out)), \
+             patch("secfesc.secfetch.data.port_db.get_port_info",
+                   return_value=("SSH", "expected")):
+            os.environ["SECFETCH_SHORT"] = "1"
+            try:
+                result = check()
+            finally:
+                os.environ["SECFETCH_SHORT"] = "0"
+        assert result["status"] == "ok"
+        assert "22" in result["value"]
+
+    def test_ufw_active_numbered_command_fails(self):
+        """Active ufw where numbered command fails still reports ok with 0 rules."""
+        from secfesc.checks.network.firewall import check
+
+        def mock_run(cmd, **kwargs):
+            if cmd == ["sudo", "ufw", "status"]:
+                return _firewall_result("Status: active\n")
+            return _firewall_result("", returncode=1)
+
+        with patch("secfesc.checks.network.firewall.safe_subprocess_run", side_effect=mock_run):
+            result = check()
+        assert result["status"] == "ok"
+        assert "ufw active" in result["value"]
+        assert "0 rules" in result["value"]
+
+    def test_firewalld_active_gives_ok(self):
+        """Active firewalld (via systemctl) returns ok immediately."""
+        from secfesc.checks.network.firewall import check
+
+        def mock_run(cmd, **kwargs):
+            if cmd == ["systemctl", "is-active", "firewalld"]:
+                return _firewall_result("active\n", returncode=0)
+            return _firewall_result("", returncode=1)
+
+        with patch("secfesc.checks.network.firewall.safe_subprocess_run", side_effect=mock_run):
+            result = check()
+        assert result["status"] == "ok"
+        assert "firewalld" in result["value"]

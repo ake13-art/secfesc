@@ -39,6 +39,28 @@ class AuditFinding:
     solution: str
     affected: str = ""
 
+    @staticmethod
+    def found(
+        category: str,
+        check_id: str,
+        title: str,
+        severity: str,
+        description: str,
+        solution: str,
+        affected: str = "",
+    ) -> "AuditFinding":
+        """Convenience constructor for a 'found' finding (the common case)."""
+        return AuditFinding(
+            category=category,
+            check_id=check_id,
+            title=title,
+            severity=severity,
+            status="found",
+            description=description,
+            solution=solution,
+            affected=affected,
+        )
+
 
 @dataclass
 class AuditReport:
@@ -58,64 +80,6 @@ class AuditReport:
 
 
 class AuditEngine:
-    CATEGORIES = [
-        "booting",
-        "kernel",
-        "memory",
-        "filesystems",
-        "storage",
-        "network",
-        "ports",
-        "printing",
-        "software",
-        "services",
-        "batchjobs",
-        "acpi",
-        "time",
-        "logging",
-        "users",
-        "groups",
-        "shells",
-        "authentication",
-        "nameservices",
-        "mail",
-        "virtualization",
-        "containers",
-        "files",
-        "attributes",
-        "permissions",
-        "cryptographic",
-        "databases",
-        "ldap",
-        "php",
-        "apache",
-        "nginx",
-        "lighttpd",
-        "tomcat",
-        "python",
-        "perl",
-        "ruby",
-        "dnsmasq",
-        "cups",
-        "squid",
-        "squid3",
-        "mysql",
-        "postgresql",
-        "msmtp",
-        "postfix",
-        "exim",
-        "dovecot",
-        "ssh",
-        "logrotate",
-        "cron",
-        "systemd",
-        "tcpwrappers",
-        "firewall",
-        "wifi",
-        "bluetooth",
-        "malware",
-    ]
-
     def __init__(self, verbose: bool = False, log_level: str = "INFO"):
         self.verbose = verbose
         self.log_level = log_level
@@ -169,13 +133,26 @@ class AuditEngine:
 
     def run_quick_audit(self) -> AuditReport:
         log_info("Starting quick security audit (no root required)")
-        quick_categories = ["kernel", "network", "ports", "services", "ssh", "users", "groups"]
+        quick_categories = [
+            "kernel",
+            "network",
+            "ports",
+            "services",
+            "ssh",
+            "users",
+            "groups",
+            "authentication",
+            "firewall",
+            "cron",
+            "permissions",
+        ]
         return self.run_categories(quick_categories)
 
     def _requires_root(self, category: str) -> bool:
+        # Categories that genuinely cannot run without root (e.g. reading file
+        # contents). Permission checks use os.stat only, so they are not listed.
         root_categories = [
             "files",
-            "permissions",
             "attributes",
             "kernel",
             "booting",

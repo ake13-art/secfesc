@@ -88,7 +88,7 @@ def check() -> dict[str, str]:
     elif priority >= _RISK_THRESHOLD_WARN:
         overall = "warn"
     else:
-        overall = "info"
+        overall = "ok"
 
     short_mode = os.environ.get("SECFETCH_SHORT", "0") == "1"
 

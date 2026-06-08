@@ -71,6 +71,25 @@ class TestSafeReadFile:
     def test_missing_file_none_default(self):
         assert safe_read_file("/nonexistent/path", default=None) is None
 
+    def test_unicode_decode_error_returns_default(self, tmp_path):
+        f = tmp_path / "binary.dat"
+        f.write_bytes(b"\xff\xfe binary garbage")
+        # UnicodeDecodeError should be caught and return default
+        result = safe_read_file(str(f), default="fallback")
+        assert result == "fallback"
+
+    def test_oserror_returns_default(self, tmp_path, monkeypatch):
+        import builtins
+        real_open = builtins.open
+        def raise_oserror(path, *a, **kw):
+            if "target" in str(path):
+                raise OSError("broken pipe")
+            return real_open(path, *a, **kw)
+        monkeypatch.setattr(builtins, "open", raise_oserror)
+        f = tmp_path / "target.txt"
+        f.write_text("x")
+        assert safe_read_file(str(f), default="oops") == "oops"
+
 
 class TestSafeSubprocessRun:
     """Tests for safe_subprocess_run."""
@@ -89,6 +108,14 @@ class TestSafeSubprocessRun:
         result = safe_subprocess_run(["sleep", "10"], timeout=1)
         assert result.returncode == -1
         assert "timeout" in result.stderr
+
+    def test_oserror_returns_completed_process(self):
+        import subprocess
+        from unittest.mock import patch
+        with patch("subprocess.run", side_effect=OSError("device error")):
+            result = safe_subprocess_run(["some", "cmd"])
+        assert result.returncode == -1
+        assert "error" in result.stderr.lower()
 
 
 class TestSysctlCheck:

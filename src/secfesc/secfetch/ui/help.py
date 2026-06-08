@@ -194,7 +194,7 @@ def print_help() -> None:
     print("  Usage")
     _divider()
     print("    secfetch                      Full security overview")
-    print("    secfetch fastscan             Scan with reduced checks (see config.py)")
+    print("    secfetch fastscan             Scan with checks enabled in ~/.config/secfesc/checks.conf")
     print("    secfetch --short              Compact one-box summary")
     print("    secfetch live                 Live monitoring, auto-refresh every 5s")
     print("    secfetch live --interval <n>  Refresh every n seconds")

@@ -97,12 +97,21 @@ class TestIPv6:
         assert result["value"] == "Disabled"
 
     def test_ipv6_enabled(self):
-        """IPv6 enabled should return info (informational only)."""
+        """IPv6 enabled should return warn (consider disabling for hardening)."""
         from secfesc.checks.network.ipv6 import check
         with patch("builtins.open", mock_open(read_data="0\n")):
             result = check()
-        assert result["status"] == "info"
+        assert result["status"] == "warn"
         assert result["value"] == "Enabled"
+
+    def test_ipv6_file_not_found_returns_info(self):
+        """Missing sysctl file returns info."""
+        from secfesc.checks.network.ipv6 import check
+        from unittest.mock import patch
+        with patch("secfesc.checks.network.ipv6.safe_read_file", return_value=None):
+            result = check()
+        assert result["status"] == "info"
+        assert result["value"] == "not available"
 
 
 class TestHardening:
@@ -200,6 +209,13 @@ class TestLockdown:
         with patch("builtins.open", side_effect=FileNotFoundError):
             result = check()
         assert result["status"] == "info"
+
+    def test_unknown_mode_returns_info(self):
+        from secfesc.checks.kernel.lockdown import check
+        with patch("builtins.open", mock_open(read_data="[unknown_mode] integrity\n")):
+            result = check()
+        assert result["status"] == "info"
+        assert result["value"] == "unknown"
 
 
 class TestLSM:

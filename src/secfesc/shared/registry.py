@@ -114,7 +114,7 @@ def run_checks(fast: bool = False) -> list[CheckResult]:
     active = [
         c
         for c in _checks
-        if not (fast and not is_enabled(config, c["name"].lower().replace(" ", "_")))
+        if not fast or is_enabled(config, c["name"].lower().replace(" ", "_"))
     ]
 
     results: list[CheckResult | None] = [None] * len(active)

@@ -110,3 +110,22 @@ class TestLogFunctions:
         log_error("test error")
         logger.error = original
         assert ("error", "test error") in called
+
+    def test_log_critical_calls_critical(self):
+        from secfesc.shared.logger import log_critical
+        logger = get_logger()
+        called = []
+        original = logger.critical
+        logger.critical = lambda msg: called.append(("critical", msg))
+        log_critical("test critical")
+        logger.critical = original
+        assert ("critical", "test critical") in called
+
+
+class TestSetupLoggerPermissionError:
+    def test_permission_error_on_log_file_still_returns_logger(self, monkeypatch):
+        """setup_logger should survive when the log directory/file can't be created."""
+        from pathlib import Path
+        monkeypatch.setattr(Path, "mkdir", lambda *a, **k: (_ for _ in ()).throw(PermissionError("denied")))
+        logger = setup_logger("test_perm_error_unique_xyz")
+        assert isinstance(logger, logging.Logger)

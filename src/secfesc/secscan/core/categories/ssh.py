@@ -15,6 +15,7 @@ from secfesc.secscan.core.registry import audit_check
 from secfesc.shared.error_handling import safe_read_file, safe_subprocess_run
 
 SSHD_CONFIG = "/etc/ssh/sshd_config"
+_CAT = "ssh"
 
 
 def _parse(text: str) -> dict[str, str]:
@@ -56,85 +57,59 @@ def check_ssh() -> list[AuditFinding]:
     cfg = _load_config()
     findings: list[AuditFinding] = []
 
-    def add(check_id, title, severity, description, solution, affected=""):
-        findings.append(
-            AuditFinding(
-                category="ssh",
-                check_id=check_id,
-                title=title,
-                severity=severity,
-                status="found",
-                description=description,
-                solution=solution,
-                affected=affected,
-            )
-        )
-
     # PermitRootLogin — modern OpenSSH defaults to "prohibit-password".
     permit_root = cfg.get("permitrootlogin", "prohibit-password").lower()
     if permit_root == "yes":
-        add(
-            "SSH-7412",
-            "Root login over SSH is permitted",
-            "high",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7412", "Root login over SSH is permitted", "high",
             "PermitRootLogin is 'yes', allowing direct password-based root login over SSH.",
             "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and restart sshd.",
             "PermitRootLogin yes",
-        )
+        ))
     elif permit_root in ("prohibit-password", "without-password", "forced-commands-only"):
-        add(
-            "SSH-7413",
-            "Root login allowed with keys",
-            "low",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7413", "Root login allowed with keys", "low",
             f"PermitRootLogin is '{permit_root}'. Root may still log in using SSH keys.",
             "If root login is not required, set 'PermitRootLogin no'.",
             f"PermitRootLogin {permit_root}",
-        )
+        ))
 
     # PermitEmptyPasswords — default "no".
     if cfg.get("permitemptypasswords", "no").lower() == "yes":
-        add(
-            "SSH-7408",
-            "Empty passwords accepted for SSH login",
-            "high",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7408", "Empty passwords accepted for SSH login", "high",
             "PermitEmptyPasswords is 'yes', letting accounts with no password log in over SSH.",
             "Set 'PermitEmptyPasswords no' in /etc/ssh/sshd_config.",
             "PermitEmptyPasswords yes",
-        )
+        ))
 
     # PasswordAuthentication — default "yes"; key-based auth is preferred.
     if cfg.get("passwordauthentication", "yes").lower() == "yes":
-        add(
-            "SSH-7414",
-            "Password authentication enabled",
-            "medium",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7414", "Password authentication enabled", "medium",
             "PasswordAuthentication is enabled; SSH passwords are brute-forceable.",
             "Use key-based authentication and set 'PasswordAuthentication no'.",
             "PasswordAuthentication yes",
-        )
+        ))
 
     # Protocol 1 — long removed from OpenSSH but flag it if explicitly set.
     protocol = cfg.get("protocol", "")
     if "1" in [p.strip() for p in protocol.split(",") if p.strip()]:
-        add(
-            "SSH-7401",
-            "Legacy SSH protocol 1 enabled",
-            "high",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7401", "Legacy SSH protocol 1 enabled", "high",
             "SSH protocol version 1 is cryptographically broken.",
             "Remove the 'Protocol 1' directive; only protocol 2 should be used.",
             f"Protocol {protocol}",
-        )
+        ))
 
     # X11Forwarding — default "no".
     if cfg.get("x11forwarding", "no").lower() == "yes":
-        add(
-            "SSH-7468",
-            "X11 forwarding enabled",
-            "low",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7468", "X11 forwarding enabled", "low",
             "X11Forwarding is enabled, widening the attack surface for connected clients.",
             "Disable it with 'X11Forwarding no' unless explicitly needed.",
             "X11Forwarding yes",
-        )
+        ))
 
     # MaxAuthTries — default 6; lower values slow brute-force attempts.
     raw_tries = cfg.get("maxauthtries", "6")
@@ -143,13 +118,11 @@ def check_ssh() -> list[AuditFinding]:
     except ValueError:
         tries = 6
     if tries > 4:
-        add(
-            "SSH-7417",
-            "MaxAuthTries is high",
-            "low",
+        findings.append(AuditFinding.found(
+            _CAT, "SSH-7417", "MaxAuthTries is high", "low",
             f"MaxAuthTries is {tries}; a lower value limits brute-force attempts per connection.",
             "Set 'MaxAuthTries 3' in /etc/ssh/sshd_config.",
             f"MaxAuthTries {tries}",
-        )
+        ))
 
     return findings

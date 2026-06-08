@@ -1,5 +1,6 @@
 """Tests for the secscan audit framework and Phase 1 checks (ssh/users/groups)."""
 
+import os
 from unittest.mock import patch
 
 from secfesc.secscan.core.engine import AuditEngine, AuditFinding
@@ -211,6 +212,51 @@ class TestEngine:
         )
         assert "No findings" in capsys.readouterr().out
 
+    def test_get_hostname_falls_back_to_unknown(self, monkeypatch):
+        monkeypatch.setattr(os, "uname", lambda: (_ for _ in ()).throw(Exception("no uname")))
+        engine = AuditEngine()
+        assert engine.report.hostname == "unknown"
+
+    def test_run_categories_skips_unregistered_category(self, monkeypatch):
+        from secfesc.secscan.core import registry
+        monkeypatch.setattr(registry, "has_checks", lambda cat: False)
+        report = AuditEngine().run_categories(["nonexistent_xyz"])
+        assert report.findings == []
+
+    def test_run_categories_skips_root_only_as_non_root(self, monkeypatch):
+        from secfesc.secscan.core import registry
+        monkeypatch.setattr(registry, "has_checks", lambda cat: True)
+        monkeypatch.setattr(registry, "run_category", lambda cat: [])
+        engine = AuditEngine()
+        engine.report.is_root = False
+        report = engine.run_categories(["files"])  # "files" is in root_categories
+        assert any("files" in w for w in report.warnings)
+
+    def test_run_full_audit_delegates_to_run_categories(self, monkeypatch):
+        from secfesc.secscan.core import registry
+        monkeypatch.setattr(registry, "registered_categories", lambda: ["ssh"])
+        monkeypatch.setattr(registry, "has_checks", lambda cat: True)
+        monkeypatch.setattr(registry, "run_category", lambda cat: [])
+        report = AuditEngine().run_full_audit()
+        assert report is not None
+
+    def test_run_quick_audit_completes(self, monkeypatch):
+        from secfesc.secscan.core import registry
+        monkeypatch.setattr(registry, "has_checks", lambda cat: False)
+        report = AuditEngine().run_quick_audit()
+        assert report is not None
+        assert report.findings == []
+
+
+# ── registry additional ───────────────────────────────────
+class TestRegistryAdditional:
+    def test_registered_categories_returns_sorted_list(self):
+        from secfesc.secscan.core import registry
+        cats = registry.registered_categories()
+        assert isinstance(cats, list)
+        assert cats == sorted(cats)
+        assert len(cats) > 0
+
 
 # ── cli exit codes ────────────────────────────────────────
 class TestCLIExitCodes:
@@ -245,3 +291,112 @@ class TestCLIExitCodes:
 
     def test_error_returns_2(self):
         assert self._run(["high", "medium"]) == 2
+
+
+# ── cli flags ─────────────────────────────────────────────
+class TestCLIFlags:
+    """Cover the --full / --category / --quick / --verbose / --quiet / --report paths."""
+
+    def _empty_report(self):
+        from datetime import datetime
+        from secfesc.secscan.core.engine import AuditReport
+        return AuditReport(hostname="h", start_time=datetime.now(), end_time=datetime.now())
+
+    def test_full_flag_calls_run_full_audit(self, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        called = []
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_full_audit", lambda self: called.append(1) or r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, r: None)
+        cli.main(["--full"])
+        assert called
+
+    def test_category_flag_calls_run_categories(self, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        called = []
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_categories",
+                            lambda self, cats: called.append(cats) or r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, rpt: None)
+        cli.main(["--category", "ssh"])
+        assert called == [["ssh"]]
+
+    def test_quick_flag_calls_run_quick_audit(self, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        called = []
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: called.append(1) or r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, rpt: None)
+        cli.main(["--quick"])
+        assert called
+
+    def test_verbose_flag_does_not_crash(self, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, rpt: None)
+        assert cli.main(["--verbose"]) == 0
+
+    def test_quiet_flag_suppresses_summary(self, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        printed = []
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, rpt: printed.append(1))
+        cli.main(["--quiet"])
+        assert not printed
+
+    def test_report_json_to_stdout(self, capsys, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        cli.main(["--report", "json"])
+        out = capsys.readouterr().out
+        import json
+        data = json.loads(out)
+        assert "findings" in data
+
+    def test_report_csv_to_stdout(self, capsys, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        cli.main(["--report", "csv"])
+        out = capsys.readouterr().out
+        assert "Category" in out
+
+    def test_report_html_to_stdout(self, capsys, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        cli.main(["--report", "html"])
+        out = capsys.readouterr().out
+        assert "<html" in out.lower()
+
+    def test_report_json_to_file(self, tmp_path, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, rpt: None)
+        out_file = tmp_path / "report.json"
+        cli.main(["--report", "json", "--output", str(out_file)])
+        import json
+        assert "findings" in json.loads(out_file.read_text())
+
+    def test_report_to_stdout_suppresses_human_summary(self, capsys, monkeypatch):
+        from secfesc.secscan import cli
+        from secfesc.secscan.core.engine import AuditEngine
+        printed = []
+        r = self._empty_report()
+        monkeypatch.setattr(AuditEngine, "run_quick_audit", lambda self: r)
+        monkeypatch.setattr(AuditEngine, "print_summary", lambda self, rpt: printed.append(1))
+        cli.main(["--report", "json"])
+        assert not printed  # human summary suppressed when exporting to stdout

@@ -5,6 +5,12 @@ from secfesc.shared.error_handling import handle_check_errors, safe_subprocess_r
 from secfesc.shared.registry import security_check
 
 
+def _firewalld_active() -> bool:
+    # Use systemctl — no sudo or polkit needed for status queries
+    result = safe_subprocess_run(["systemctl", "is-active", "firewalld"], timeout=5)
+    return result.returncode == 0 and result.stdout.strip() == "active"
+
+
 def _ufw_rules() -> list[str]:
     # Parse ufw numbered rules
     result = safe_subprocess_run(["sudo", "ufw", "status", "numbered"], timeout=5)
@@ -38,7 +44,11 @@ def _nft_rules() -> list[str]:
 )
 @handle_check_errors
 def check() -> dict[str, str]:
-    # First check if ufw is enabled (most common on Ubuntu/Debian)
+    # Check firewalld first — no sudo or polkit required (Arch/Fedora/RHEL)
+    if _firewalld_active():
+        return {"status": "ok", "value": "firewalld active"}
+
+    # Check ufw (Ubuntu/Debian)
     result = safe_subprocess_run(["sudo", "ufw", "status"], timeout=5)
     if result.returncode == 0:
         status_line = result.stdout.split("\n")[0].strip()

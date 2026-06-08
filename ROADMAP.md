@@ -48,6 +48,15 @@ Built on a shared audit-check framework (`secscan/core/registry.py` +
 `@audit_check`). Adding a check is now: drop a function in
 `secscan/core/categories/<cat>.py`, decorate it, return `AuditFinding`s.
 
+### Phase 1b: Hardening & Policy ✅ (v1.7.0)
+
+| Category | Checks Needed | Status |
+|----------|---------------|--------|
+| Authentication | Password ageing, weak hash, UMASK (`/etc/login.defs`) | ✅ done |
+| Firewall | Active firewall detection (firewalld / ufw / nftables / iptables) | ✅ done |
+| Cron | World-writable cron paths/files, unrestricted cron policy | ✅ done |
+| Permissions | Mode & ownership of `/etc/passwd`, `/etc/shadow`, `/etc/gshadow`, `/etc/group` | ✅ done |
+
 ### Phase 2: Foundation
 
 **Goal**: 100+ working checks.
@@ -160,6 +169,7 @@ Use existing `@security_check` decorator (until v2.0 unification).
 
 | Version | Focus |
 |---------|-------|
+| v1.7.0 | secscan categories: authentication, firewall, cron, permissions |
 | v1.6.1 | Quality & consistency: dead-code removal, naming consistency, banner, +tests (75%→80%) |
 | v1.6.0 | secscan real findings (SSH/Users/Groups), unified shared check framework, packaging fix |
 | v1.5.3 | secscan Export (JSON/HTML/CSV), Bug fixes |

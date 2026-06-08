@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from importlib.metadata import version as _pkg_version
 
 from secfesc.shared import log_info
 
@@ -23,7 +24,7 @@ Examples:
   secscan --verbose     Enable verbose output
         """,
     )
-    parser.add_argument("--version", action="version", version="secscan 1.6.1")
+    parser.add_argument("--version", action="version", version=f"secscan {_pkg_version('secfesc')}")
     parser.add_argument(
         "--full",
         action="store_true",
@@ -96,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.report:
         log_info(f"Exporting report as {args.report}")
         output_file = args.output
+        output = ""
 
         if args.report == "json":
             from secfesc.secscan.report.json import export_json
@@ -109,9 +111,6 @@ def main(argv: list[str] | None = None) -> int:
             from secfesc.secscan.report.csv import export_csv
 
             output = export_csv(report, output_file)
-        else:
-            log_info(f"Unknown export format: {args.report}")
-            return 1
 
         if not output_file:
             print(output)
@@ -126,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     try:
         sys.exit(main())
     except KeyboardInterrupt:

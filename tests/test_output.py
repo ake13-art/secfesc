@@ -1,9 +1,12 @@
 """Tests for pure utility functions in ui/output.py."""
 
+import secfesc.secfetch.ui.output as output_mod
 from secfesc.secfetch.ui.output import (
     _SCORE_GOOD,
     _SCORE_WARN,
     _has_ansi,
+    _short_box,
+    _short_side,
     _strip_ansi,
     print_results,
     print_results_live,
@@ -117,3 +120,31 @@ class TestRendering:
         print_results([])
         # should not raise; some output is produced
         assert capsys.readouterr().out is not None
+
+    def test_short_side_renders_score_and_checks(self, capsys, sample_results):
+        _short_side(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "/100" in out
+
+    def test_short_side_no_logo_prints_info_only(self, capsys, sample_results, monkeypatch):
+        monkeypatch.setattr(output_mod, "_get_logo_lines", lambda: [])
+        _short_side(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "/100" in out
+
+    def test_short_side_shows_userhost_header(self, capsys, sample_results):
+        _short_side(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "@" in out  # user@hostname header present
+
+    def test_short_box_renders_score_and_checks(self, capsys, sample_results):
+        _short_box(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "/100" in out
+        assert "ASLR" in out
+
+    def test_print_results_short_box_layout(self, capsys, sample_results, monkeypatch):
+        monkeypatch.setattr(output_mod, "SHORT_LAYOUT", "box")
+        print_results_short(sample_results)
+        out = _strip_ansi(capsys.readouterr().out)
+        assert "/100" in out

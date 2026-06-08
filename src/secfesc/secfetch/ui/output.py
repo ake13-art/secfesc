@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import functools
+import os
 import re
+import socket
 
-from secfesc.shared.colors import CLEAR, GREEN, ICONS, RED, RESET, YELLOW, colorize
+from secfesc.shared.colors import BLUE, BOLD, CLEAR, GREEN, ICONS, RED, RESET, YELLOW, colorize
 from secfesc.shared.scoring import calculate_score
 from secfesc.shared.types import CheckResult
 
@@ -12,8 +14,7 @@ from secfesc.shared.types import CheckResult
 #  "box"  = categories in a box (default)
 #  "side" = logo left, info right
 # ─────────────────────────────────────────────
-SHORT_LAYOUT = "box"
-# SHORT_LAYOUT = "side"
+SHORT_LAYOUT = "side"
 
 _NAME_WIDTH = 22
 _CATEGORY_WIDTH = 20
@@ -41,6 +42,57 @@ LOGO_SHORT = [
     r" (__  )  __/ /__/ __/  __(__  ) /__",
     r"/____/\___/\___/_/  \___/____/\___/",
 ]
+
+# Built-in logos for `secfetch --short`.
+# Selected via [display] logo = <name> in checks.conf.
+LOGOS: dict[str, list[str]] = {
+    "secfesc": LOGO_SHORT,
+    # Classic neofetch-style Arch Linux logo — the arch with portal cut-out
+    "arch": [
+        r"       /\ ",
+        r"      /  \ ",
+        r"     /\   \ ",
+        r"    /  __  \ ",
+        r"   /  (  )  \ ",
+        r"  / __|  |-- \ ",
+        r" /_-''    ''-_\ ",
+    ],
+    # Neofetch Debian small logo — the swirling D-shape
+    "debian": [
+        r"  _____ ",
+        r" /  __ \ ",
+        r"|  /    |",
+        r"|  \___-",
+        r"-_ ",
+        r"  --_ ",
+    ],
+    # Neofetch Ubuntu small logo — the three circles (circle of friends)
+    "ubuntu": [
+        r"         _ ",
+        r"     ---(_)",
+        r" _/  ---  \ ",
+        r"(_) |   | ",
+        r"  \  --- _/ ",
+        r"     ---(_) ",
+    ],
+    # Fedora hat shape — the distro is literally named after this hat
+    "fedora": [
+        r"      ___ ",
+        r"    /     \ ",
+        r"   /  , ,  \ ",
+        r"  /         \ ",
+        r" |___________| ",
+        r"",
+    ],
+    "none": [],
+}
+
+
+def _get_logo_lines() -> list[str]:
+    from secfesc.shared.config import load_config
+    name = load_config().get("display", "logo", fallback="secfesc").lower().strip()
+    return LOGOS.get(name, LOGO_SHORT)
+
 
 # display order and titles for categories
 CATEGORY_ORDER = [
@@ -169,8 +221,11 @@ def _short_box(results: list[CheckResult]) -> None:
 
 
 # ─────────────────────────────────────────────
-#  Short output – Side variant
+#  Short output – Side variant (fastfetch-style)
 # ─────────────────────────────────────────────
+
+_LOGO_GAP = "  "  # gap between logo column and info column
+_LBL_W = 11       # widest label: "Secure Boot"
 
 
 def _short_side(results: list[CheckResult]) -> None:
@@ -178,19 +233,43 @@ def _short_side(results: list[CheckResult]) -> None:
     fmt = functools.partial(_format_check_result, results)
     kernel = next((r["value"] for r in results if r["name"] == "Kernel"), "?")
 
-    info_lines = [
-        f"  Kernel       {kernel}",
-        f"  Secure Boot  {fmt('Secure Boot')}",
-        f"  ASLR         {fmt('ASLR')}",
-        f"  Lockdown     {fmt('Lockdown')}",
-        f"  Firewall     {fmt('Firewall Rules')}",
-        f"  Ports        {fmt('Open Ports')}",
-        f"  Score        {score_bar(score, width=_SCORE_BAR_WIDTH_FULL)}  {score}/100",
+    try:
+        user = os.getenv("USER") or os.getenv("LOGNAME") or "user"
+        host = socket.gethostname()
+    except Exception:  # pragma: no cover
+        user, host = "user", "host"
+
+    userhost = f"{user}@{host}"
+
+    def _row(label: str, value: str) -> str:
+        return f"  {BLUE}{label.ljust(_LBL_W)}{RESET}  {value}"
+
+    info_lines: list[str] = [
+        f"  {BOLD}{BLUE}{userhost}{RESET}",
+        f"  {BLUE}{'─' * len(userhost)}{RESET}",
+        _row("Kernel", kernel),
+        _row("Secure Boot", fmt("Secure Boot")),
+        _row("ASLR", fmt("ASLR")),
+        _row("Lockdown", fmt("Lockdown")),
+        _row("Firewall", fmt("Firewall Rules")),
+        _row("Ports", fmt("Open Ports")),
+        _row("Score", f"{score_bar(score, width=_SCORE_BAR_WIDTH_FULL)}  {score}/100"),
     ]
 
-    max_lines = max(len(LOGO_SHORT), len(info_lines))
-    for i in range(max_lines):
-        left = LOGO_SHORT[i] if i < len(LOGO_SHORT) else " " * 42
+    logo = _get_logo_lines()
+
+    print()
+    if not logo:
+        for line in info_lines:
+            print(line)
+        print()
+        return
+
+    col = max(len(line) for line in logo)
+    n = max(len(logo), len(info_lines))
+    for i in range(n):
+        logo_text = logo[i] if i < len(logo) else ""
+        left = f"{BOLD}{BLUE}{logo_text.ljust(col)}{RESET}{_LOGO_GAP}"
         right = info_lines[i] if i < len(info_lines) else ""
         print(left + right)
     print()

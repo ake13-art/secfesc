@@ -28,20 +28,21 @@ def _wait_for_quit(stop_event: threading.Event) -> None:
                 break
         return
 
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setcbreak(fd)
-        while not stop_event.is_set():
-            ready, _, _ = select.select([sys.stdin], [], [], 0.5)
-            if ready:
-                ch = sys.stdin.read(1)
-                if ch and ch.lower() == "q":
-                    stop_event.set()
-    except (EOFError, OSError):
-        pass
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    else:  # pragma: no cover
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setcbreak(fd)
+            while not stop_event.is_set():
+                ready, _, _ = select.select([sys.stdin], [], [], 0.5)
+                if ready:
+                    ch = sys.stdin.read(1)
+                    if ch and ch.lower() == "q":
+                        stop_event.set()
+        except (EOFError, OSError):
+            pass
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 
 def main():
@@ -108,5 +109,5 @@ def main():
         print_results(results)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

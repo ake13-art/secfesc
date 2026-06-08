@@ -18,7 +18,7 @@
 
 <br>
 
-![Version](https://img.shields.io/badge/version-1.6.1-1f6feb?style=for-the-badge&labelColor=0d1117)
+![Version](https://img.shields.io/badge/version-1.7.0-1f6feb?style=for-the-badge&labelColor=0d1117)
 ![License](https://img.shields.io/badge/license-GPL--3.0-58a6ff?style=for-the-badge&labelColor=0d1117)
 ![Python](https://img.shields.io/badge/python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=0d1117)
 ![Platform](https://img.shields.io/badge/platform-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=white&labelColor=0d1117)
@@ -96,19 +96,27 @@ sudo secscan --full   # Complete audit (requires root)
 | Command | Description |
 |---------|-------------|
 | `secfetch` | Full security overview |
-| `secfetch --short` | Compact box |
-| `secfetch help` | List checks |
-| `secfetch help <name>` | Check details |
+| `secfetch --short` | Compact one-box summary |
+| `secfetch fastscan` | Fast scan (enabled checks only, see `~/.config/secfesc/checks.conf`) |
+| `secfetch live` | Live monitoring, auto-refresh every 5 s |
+| `secfetch live --interval N` | Live monitoring, refresh every N seconds |
+| `secfetch improve` | Show failing checks with fix suggestions |
+| `secfetch improve --auto` | Interactive auto-fix selection and apply |
+| `secfetch help` | List all checks |
+| `secfetch help <name>` | Detailed info about a check |
 
 ### secscan
 
 | Command | Description |
 |---------|-------------|
-| `secscan` | Basic audit |
+| `secscan` | Basic audit (no root) |
 | `secscan --full` | Complete audit |
-| `secscan --quick` | Essential checks |
+| `secscan --quick` | Essential checks only |
 | `secscan --category ssh` | Specific category |
-| `secscan --report json` | Export results |
+| `secscan --report json` | Export results to stdout |
+| `secscan --report html --output audit.html` | Export report to file |
+| `secscan --verbose` | Enable verbose/debug output |
+| `secscan --quiet` | Suppress human summary |
 
 <br>
 
@@ -134,13 +142,17 @@ sudo secscan --full   # Complete audit (requires root)
 | Network | Firewall, Ports, Services, SYN Cookies |
 | Filesystem | SUID, World Writable, /tmp |
 
-### secscan (active checks as of v1.6.0)
+### secscan (active checks as of v1.7.0)
 
 | Category | Checks |
 |----------|--------|
 | SSH | Root login, empty passwords, password auth, legacy protocol, X11 forwarding, MaxAuthTries |
 | Users | UID 0 accounts, empty passwords (root), duplicate UID/name |
 | Groups | Duplicate GID/name, root group members |
+| Authentication | Password ageing policy, weak hash method, default umask (`/etc/login.defs`) |
+| Firewall | Active firewall detection (firewalld/ufw/nftables/iptables) |
+| Cron | World-writable cron paths/files, unrestricted cron policy |
+| Permissions | Mode & ownership of `/etc/passwd`, `/etc/group`, `/etc/shadow`, `/etc/gshadow` |
 
 ### secscan (roadmap)
 
@@ -167,20 +179,35 @@ sudo secscan --full   # Complete audit (requires root)
 <br>
 
 ```
-   secfetch
-   ────────────────────────────────────────
-     Kernel                  6.x.x-arch1-1
-     Secure Boot             Disabled
-   Kernel Security
-   ────────────────────────────────────────
-     ✔  ASLR                 Full
-     ✔  LSM                  apparmor
-   Network
-   ────────────────────────────────────────
-     ✔  Firewall             ufw active
-     ✔  Open Ports           3 listening
-   ────────────────────────────────────────
-     Security Score          85/100
+                   ____
+   ________  _____/ __/__  __________
+  / ___/ _ \/ ___/ /_/ _ \/ ___/ ___/
+ (__  )  __/ /__/ __/  __(__  ) /__
+/____/\___/\___/_/  \___/____/\___/
+
+  System
+  ────────────────────────────────────────
+    ✔  Kernel                6.14.6-zen1-1-zen
+    ✔  Secure Boot           Enabled
+
+  Kernel Security
+  ────────────────────────────────────────
+    ✔  ASLR                  Full
+    ✔  Lockdown              integrity
+    ✔  LSM                   landlock,lockdown,yama,integrity,apparmor,bpf
+
+  Network
+  ────────────────────────────────────────
+    ✔  Firewall Rules        firewalld active
+    ✔  Open Ports            22 (SSH/TCP), 53 (DNS/UDP)
+
+  Security Score
+  ────────────────────────────────────────
+    System               [████████████]  92/100
+    Kernel Security      [████████████]  95/100
+    Network              [██████████░░]  80/100
+    ────────────────────────────────────────
+    Total                [████████████]  88/100
 ```
 
 <br>

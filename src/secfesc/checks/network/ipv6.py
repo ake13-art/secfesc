@@ -11,4 +11,4 @@ def check() -> dict[str, str]:
         return {"status": "info", "value": "not available"}
     if val == "1":
         return {"status": "ok", "value": "Disabled"}
-    return {"status": "info", "value": "Enabled"}
+    return {"status": "warn", "value": "Enabled"}

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
+import threading
 from typing import Callable, List, Optional, Union
 
 from secfesc.secscan.core.engine import AuditFinding
@@ -25,6 +26,7 @@ CheckFunc = Callable[[], Union[AuditFinding, List[AuditFinding], None]]
 
 _CHECKS: dict[str, list[CheckFunc]] = {}
 _discovered = False
+_discover_lock = threading.Lock()
 
 
 def audit_check(category: str) -> Callable[[CheckFunc], CheckFunc]:
@@ -45,14 +47,17 @@ def _discover() -> None:
     global _discovered
     if _discovered:
         return
-    import secfesc.secscan.core.categories as pkg
+    with _discover_lock:
+        if _discovered:  # pragma: no cover — second thread arriving after first completes
+            return
+        import secfesc.secscan.core.categories as pkg
 
-    for mod in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
-        try:
-            importlib.import_module(mod.name)
-        except Exception as e:  # pragma: no cover - defensive
-            log_error(f"Failed to load audit category module {mod.name}: {e}")
-    _discovered = True
+        for mod in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
+            try:
+                importlib.import_module(mod.name)
+            except Exception as e:  # pragma: no cover - defensive
+                log_error(f"Failed to load audit category module {mod.name}: {e}")
+        _discovered = True
 
 
 def registered_categories() -> list[str]:

@@ -8,6 +8,9 @@ from pathlib import Path
 CONFIG_PATH = Path.home() / ".config" / "secfesc" / "checks.conf"
 
 DEFAULT_CONFIG = """
+[display]
+logo = secfesc
+
 [checks]
 aslr = true
 secure_boot = true

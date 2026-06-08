@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
-
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
+from typing import List, TypedDict
 
 
 class CheckRegistration(TypedDict):

@@ -1,12 +1,62 @@
+<div align="center">
+
+```
+   ________  _____/ __/__  __________
+  / ___/ _ \/ ___/ /_/ _ \/ ___/ ___/
+ (__  )  __/ /__/ __/  __(__  ) /__
+/____/\___/\___/_/  \___/____/\___/
+```
+
+[← README](../README.md) · [Installation](INSTALL.md) · [Usage](USAGE.md) · [Architecture](ARCHITECTURE.md)
+
 # Configuration
 
-Config file: `~/.config/secfesc/checks.conf`
+*Enable and disable checks. Choose your startup logo.*
 
-Created automatically on first run.
+</div>
 
 ---
 
-## Default Checks (secfetch)
+## Config file
+
+```
+~/.config/secfesc/checks.conf
+```
+
+Created automatically on first run with all defaults. Edit it at any time — restart secfetch to reload.
+
+---
+
+## Display settings
+
+Controls how `secfetch --short` looks.
+
+```ini
+[display]
+logo = secfesc
+```
+
+### Built-in logos
+
+| Value | Distro / Style |
+|-------|----------------|
+| `secfesc` | secfesc ASCII art (default) |
+| `arch` | Arch Linux |
+| `debian` | Debian |
+| `ubuntu` | Ubuntu |
+| `fedora` | Fedora |
+| `none` | No logo — info only |
+
+> [!TIP]
+> Put `secfetch --short` at the end of your `~/.bashrc` or `~/.zshrc` and set `logo` to match your distro. You get your security status every time you open a terminal — just like fastfetch shows system info.
+
+See [Usage → Startup integration](USAGE.md#startup-integration) for the full setup guide.
+
+---
+
+## Check settings
+
+Controls which checks `secfetch` and `secfetch fastscan` run.
 
 ```ini
 [checks]
@@ -34,28 +84,38 @@ suid_binaries = false
 services = false
 ```
 
+### All available keys
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `aslr` | `true` | Address Space Layout Randomization |
+| `secure_boot` | `true` | UEFI Secure Boot status |
+| `kernel` | `true` | Kernel version |
+| `lockdown` | `true` | Kernel lockdown mode |
+| `firewall_rules` | `true` | Firewall status (firewalld / ufw / nft / iptables) |
+| `open_ports` | `true` | Listening network ports |
+| `ptrace_scope` | `true` | Ptrace process-tracing restrictions |
+| `dmesg_restrict` | `true` | Dmesg access restrictions |
+| `tcp_syn_cookies` | `true` | TCP SYN cookie flood protection |
+| `reverse_path_filter` | `true` | Reverse path filtering (anti-spoofing) |
+| `lsm` | `false` | Linux Security Modules (AppArmor / SELinux) |
+| `kptr_restrict` | `false` | Kernel pointer exposure |
+| `modules_disabled` | `false` | Runtime kernel module loading |
+| `unprivileged_bpf` | `false` | Unprivileged BPF access |
+| `ipv6` | `false` | IPv6 status |
+| `services` | `false` | Running services audit (blacklist-based) |
+| `world_writable` | `false` | World-writable files (slow, full FS scan) |
+| `suid_binaries` | `false` | SUID binary audit (slow, full FS scan) |
+| `/tmp_noexec` | `false` | /tmp mounted with noexec |
+| `/tmp_sticky_bit` | `false` | Sticky bit on /tmp |
+
+> [!NOTE]
+> `fastscan` only runs checks marked `true`. A plain `secfetch` (no flag) always runs all enabled checks regardless of fastscan status.
+
 ---
 
-## Available Check Keys
+<div align="center">
 
-| Key | Description |
-|-----|-------------|
-| `aslr` | Address Space Layout Randomization |
-| `secure_boot` | UEFI Secure Boot status |
-| `kernel` | Kernel version |
-| `lockdown` | Kernel lockdown mode |
-| `firewall_rules` | Firewall status |
-| `open_ports` | Listening network ports |
-| `ptrace_scope` | Ptrace restrictions |
-| `dmesg_restrict` | Dmesg access restrictions |
-| `tcp_syn_cookies` | TCP SYN cookies |
-| `reverse_path_filter` | Reverse path filtering |
-| `lsm` | Linux Security Modules |
-| `ipv6` | IPv6 status |
-| `services` | Running services audit |
+[← README](../README.md) · [Installation](INSTALL.md) · [Usage](USAGE.md) · [Architecture](ARCHITECTURE.md)
 
----
-
-## Reloading Config
-
-Restart secfetch to reload configuration.
+</div>
